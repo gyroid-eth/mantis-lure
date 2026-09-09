@@ -67,6 +67,10 @@ body{background:var(--slate);color:var(--text);font-family:var(--sans);
 /* ── stage ───────────────────────────────────────────── */
 .stage{flex:1 1 auto;position:relative;min-height:0;background:#000}
 #field{display:block;width:100%;height:100%;touch-action:none}
+.calwarn{position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  background:rgba(34,39,37,.9);color:var(--amber);border:1px solid var(--amberdim);
+  font-size:11.5px;padding:6px 13px;border-radius:3px;backdrop-filter:blur(3px);max-width:80%}
+.rd b.est{color:var(--amberdim)}
 .log{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(180deg,rgba(34,39,37,0),rgba(34,39,37,.92) 38%);pointer-events:none}
 .log>*{pointer-events:auto}
@@ -106,6 +110,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--am
   font-family:var(--sans);font-size:12px;padding:10px 4px;cursor:pointer}
 .seg button:last-child{border-right:0}
 .seg button.on{background:var(--metal);color:#1b1f1e}
+select.wide{-webkit-appearance:none;appearance:none}
 .wide{display:block;width:100%;border:1px solid var(--line);background:#1b1f1e;color:var(--metal);
   font-family:var(--mech);font-weight:300;font-size:12px;letter-spacing:.1em;padding:11px;border-radius:4px;cursor:pointer;margin-top:8px}
 .wide:active{background:var(--metal);color:#1b1f1e}
@@ -163,6 +168,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--am
 
 <div class="stage" id="stage">
   <canvas id="field"></canvas>
+  <div class="calwarn" id="calWarn">未校正 — 角度は推定値です。設定 → CALIBRATION で端末を選ぶか定規を合わせてください</div>
 
   <div class="log">
     <button class="strike" id="btnStrike">襲った</button>
@@ -178,7 +184,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--am
     <div class="fld">
       <label>獲物の大きさ<b><span id="vSize">15</span><em>°</em>　<span id="vSizeMm" style="font-size:11px;color:var(--metaldim)">26mm</span></b></label>
       <input type="range" id="sSize" min="4" max="35" step="1" value="15">
-      <div class="hint">文献では 10–20° の暗い円盤に最もよく襲いかかり、最大反応は 20–23°。視距離とキャリブレーションから実寸を計算しています。</div>
+      <div class="hint">Prete et al. 2013 では種差が大きい。Sphodromantis lineola は 10–20° で襲撃率が最大（逆U字）、Parasphendale affinis は 9° の円盤でピーク・襲撃閾値 6.9°、Popa spurca は 44° まで反応率が上昇し続ける。まず 15° から始めて、襲う角度を自分の個体で探すのが確実です。</div>
     </div>
     <div class="fld">
       <label>視距離（カマキリ→画面）<b><span id="vDist">10</span><em>cm</em></b></label>
@@ -188,7 +194,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--am
     <div class="fld">
       <label>最高速度<b><span id="vSpeed">80</span><em>°/s</em></b></label>
       <input type="range" id="sSpeed" min="10" max="200" step="5" value="80">
-      <div class="hint">最大反応は 46–119°/s。遅すぎても速すぎても襲わなくなります。</div>
+      <div class="hint">Prete et al. 2013 が用いた条件は 74–180°/s、O'Keeffe et al. 2022 のモデルは 82°/s。いずれも「実験条件」であって最適値の実測ではありません。80 はその中央付近の出発点です。</div>
     </div>
 
     <h2>COLOUR</h2>
@@ -199,7 +205,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--am
     <div class="fld">
       <label>背景の色<b id="vBg" style="font-size:11px">#F2F1EC</b></label>
       <div class="swatches" id="swBg"></div>
-      <div class="hint">カマキリが見ているのは主に明暗差です。コントラストが 0.5 を下回ると検出が落ちる恐れがあります。</div>
+      <div class="hint">色が輝度と独立に襲撃判断に効くという行動学的証拠は見つかっていません。主変数は明暗差です。検出閾値は Michelson 0.016 程度と非常に低い一方、暗い標的×明るい背景が逆より一貫して有利。ここは色ではなくコントラストを作る道具として使ってください。</div>
     </div>
 
     <h2>MOTION</h2>
@@ -216,7 +222,10 @@ input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--am
     <h2>CALIBRATION</h2>
     <div class="fld">
       <div class="hint" id="calState">未校正 — 実寸の計算に定規合わせが必要です。</div>
-      <button class="wide" id="btnCal">定規を合わせる</button>
+      <select class="wide" id="selDevice" style="text-align:center"></select>
+      <button class="wide" id="btnCal">定規を合わせる（より正確）</button>
+      <div class="hint">端末を選ぶだけでも実用になりますが、ケースやスケーリングで変わるので、
+        記録を残すなら定規合わせを推奨します。</div>
     </div>
 
     <h2>RECORD</h2>
@@ -269,8 +278,21 @@ addEventListener('resize', resize);
 addEventListener('orientationchange', () => setTimeout(resize, 200));
 
 /* ══ geometry ═══════════════════════════════════════════ */
-// fallback ~ typical tablet density if uncalibrated
-const ppm = () => P.pxPerMm || (DPR * 160 / 25.4);
+// We draw in CSS pixels, so this must be CSS px per mm — NOT device px.
+// Uncalibrated it is a guess: most iPads are 264 ppi at DPR 2 = 5.20 CSS px/mm;
+// a plain desktop display is 96 CSS ppi = 3.78. Every angle on screen depends on
+// this number, so the UI marks readouts as estimates until it is pinned down.
+const DEVICES = [
+  ['未校正（推定）',            0],
+  ['iPad / iPad Air / iPad Pro', 5.20],
+  ['iPad mini',                  6.42],
+  ['iPhone (DPR 2)',             6.42],
+  ['iPhone (DPR 3)',             6.04],
+  ['MacBook Pro Retina',         5.00],
+  ['一般的な PC モニタ 96dpi',   3.78]
+];
+const GUESS = () => (matchMedia('(pointer:coarse)').matches ? 5.20 : 3.78);
+const ppm = () => P.pxPerMm || GUESS();
 const sizeMm = () => 2 * (P.distCm * 10) * Math.tan(P.sizeDeg * Math.PI / 360);
 const sizePx = () => Math.max(6, sizeMm() * ppm());
 const dpsToPx = dps => (2 * (P.distCm * 10) * Math.tan(dps * Math.PI / 360)) * ppm();
@@ -446,7 +468,10 @@ function frame(now){
 /* ══ readouts ═══════════════════════════════════════════ */
 const $ = id => document.getElementById(id);
 function refresh(){
-  $('rdSize').innerHTML = P.sizeDeg + '<em>°</em>';
+  const est = !P.pxPerMm;
+  $('rdSize').innerHTML = P.sizeDeg + '<em>°</em>' + (est ? '<em> 推定</em>' : '');
+  $('rdSize').classList.toggle('est', est);
+  $('calWarn').hidden = !est;
   $('rdDist').innerHTML = P.distCm + '<em>cm</em>';
   const c = contrast();
   const cn = $('rdCon'); cn.textContent = c.toFixed(2); cn.classList.toggle('warn', c < .5);
@@ -457,8 +482,8 @@ function refresh(){
   $('cTrack').textContent = P.log.filter(l => l.event === 'track').length;
   $('logState').textContent = '記録 ' + P.log.length + ' 件';
   $('calState').textContent = P.pxPerMm
-    ? '校正済み — 1 mm = ' + P.pxPerMm.toFixed(2) + ' px'
-    : '未校正 — 実寸は推定値です。定規合わせを推奨。';
+    ? '校正済み — 1 mm = ' + P.pxPerMm.toFixed(2) + ' CSS px'
+    : '未校正 — 1 mm = ' + GUESS().toFixed(2) + ' CSS px と仮定中（推定）。';
   save();
 }
 
@@ -539,6 +564,10 @@ $('btnAuto').onclick = () => {
 };
 
 /* ══ calibration ════════════════════════════════════════ */
+const selD = $('selDevice');
+DEVICES.forEach(([n, v]) => { const o = document.createElement('option'); o.value = v; o.textContent = n; selD.appendChild(o); });
+selD.value = String(P.pxPerMm || 0);
+selD.onchange = e => { P.pxPerMm = +e.target.value; refresh(); };
 $('btnCal').onclick = () => {
   $('cal').classList.add('open');
   $('calRange').value = P.pxPerMm ? Math.round(P.pxPerMm * 100) : 380;
@@ -547,7 +576,9 @@ $('btnCal').onclick = () => {
 $('calRange').oninput = e => $('calBar').style.width = e.target.value + 'px';
 $('calDone').onclick = () => {
   P.pxPerMm = (+$('calRange').value) / 100;
-  $('cal').classList.remove('open'); refresh();
+  $('cal').classList.remove('open');
+  selD.value = DEVICES.some(d => d[1] === P.pxPerMm) ? String(P.pxPerMm) : '0';
+  refresh();
 };
 
 /* ══ record ═════════════════════════════════════════════ */
