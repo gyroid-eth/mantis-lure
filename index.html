@@ -88,7 +88,10 @@ body{background:var(--slate);color:var(--text);font-family:var(--sans);
 .log button.strike{border-color:#c9552f;color:#ff8f5e}
 .log button:active{background:var(--amber);color:#1b1f1e}
 .log .count{margin-left:auto;align-self:center;font-family:var(--mech);font-size:12px;
-  letter-spacing:.1em;color:var(--metaldim);background:rgba(27,31,30,.9);padding:8px 12px;border-radius:4px}
+  letter-spacing:.1em;color:var(--metaldim);background:rgba(27,31,30,.9);padding:11px 14px;
+  border:1px solid var(--line);border-radius:4px;cursor:pointer}
+.log .count.arm{border-color:#c9552f;color:#ff8f5e}
+.log .count.arm b{color:#ff8f5e}
 .log .count b{color:var(--amber);font-size:15px;font-weight:500}
 
 /* ── drawer ──────────────────────────────────────────── */
@@ -123,6 +126,7 @@ select.wide{-webkit-appearance:none;appearance:none}
 .wide{display:block;width:100%;border:1px solid var(--line);background:#1b1f1e;color:var(--metal);
   font-family:var(--mech);font-weight:300;font-size:12px;letter-spacing:.1em;padding:11px;border-radius:4px;cursor:pointer;margin-top:8px}
 .wide:active{background:var(--metal);color:#1b1f1e}
+.wide.arm{border-color:#c9552f;color:#ff8f5e}
 .close{position:absolute;top:10px;right:12px;border:0;background:transparent;color:var(--metaldim);font-size:22px;cursor:pointer;line-height:1;padding:4px 8px}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
@@ -174,7 +178,7 @@ select.wide{-webkit-appearance:none;appearance:none}
 
   <div class="log">
     <button class="strike" id="btnStrike">襲った</button>
-    <div class="count">襲撃 <b id="cStrike">0</b></div>
+    <button class="count" id="btnCount">襲撃 <b id="cStrike">0</b></button>
   </div>
 
   <aside class="drawer" id="drawer" aria-label="設定">
@@ -250,6 +254,7 @@ select.wide{-webkit-appearance:none;appearance:none}
     <h2>RECORD</h2>
     <div class="fld">
       <div class="hint" id="logState">記録 0 件</div>
+      <div class="hint">下の襲撃カウンターを2回押しても消せます。消す前に CSV を書き出してください。</div>
       <button class="wide" id="btnCsv">CSV を書き出す</button>
       <button class="wide" id="btnClear">記録を消す</button>
     </div>
@@ -556,7 +561,10 @@ function refresh(){
     cm + 'cm → ' + degAt(P.sizeMm, cm * 10).toFixed(1) + '°').join('　/　');
   $('vSpeed').textContent = P.speedMms;
   $('vTgt').textContent = P.tgt.toUpperCase(); $('vBg').textContent = P.bg.toUpperCase();
+  const arming = armed && Date.now() < armed;
   $('cStrike').textContent = P.log.length;
+  $('btnCount').firstChild.nodeValue = arming ? 'もう一度押すと消える ' : '襲撃 ';
+  $('btnClear').textContent = arming ? 'もう一度押すと消える' : '記録を消す';
   $('logState').textContent = '記録 ' + P.log.length + ' 件';
   $('vPpm').textContent = (P.pxPerMm || GUESS()).toFixed(2);
   $('calState').textContent = P.pxPerMm
@@ -690,7 +698,24 @@ $('btnCsv').onclick = () => {
   a.download = 'mantis-lure_' + new Date().toISOString().slice(0,16).replace(/[-:T]/g,'') + '.csv';
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
-$('btnClear').onclick = () => { if (confirm('記録をすべて消しますか？')){ P.log = []; refresh(); } };
+/* Clearing is two taps in the same spot rather than a browser dialog: on a tablet a
+   modal covers the field, and the mantis does not wait for you to dismiss it. */
+let armed = 0, armTimer = null;
+function arm(on){
+  armed = on ? Date.now() + 4000 : 0;
+  $('btnCount').classList.toggle('arm', on);
+  $('btnClear').classList.toggle('arm', on);
+  clearTimeout(armTimer);
+  if (on) armTimer = setTimeout(() => arm(false), 4000);
+  refresh();
+}
+function askClear(){
+  if (!P.log.length) return;
+  if (armed && Date.now() < armed){ P.log = []; arm(false); }
+  else arm(true);
+}
+$('btnCount').onclick = askClear;
+$('btnClear').onclick = askClear;
 
 /* ══ screen ═════════════════════════════════════════════ */
 $('btnFull').onclick = () => {
