@@ -258,12 +258,13 @@ const P = Object.assign({
 }, JSON.parse(localStorage.getItem(LS) || '{}'));
 const save = () => localStorage.setItem(LS, JSON.stringify(P));
 
-const A = { buzz:0, held:false, flee:0, hold:false, loom:0 };   // action levels
+const A = { buzz:0, held:false, buzzUntil:0, breakout:0, flee:0, hold:false, loom:0 };
 const dir = { x:0, y:0 };
 const prey = { x:0, y:0, vx:0, vy:0, ang:0, phase:0, rest:0, ax:0, ay:0 };
 const NAME = ['ハエ','バッタ','コオロギ','クモ'];
 const NAME_EN = ['housefly','onbu_grasshopper','emma_cricket','jumping_spider'];
 
+const btnBuzz = document.querySelector('[data-a="buzz"]');
 const canvas = document.getElementById('field');
 const ctx = canvas.getContext('2d');
 let W = 0, H = 0, DPR = 1;
@@ -376,7 +377,7 @@ function stepPrey(dt){
     /* Two separate questions were tangled together here: who decides where the prey
        travels, and how it moves once it is there. The species signature below is the
        second one and always runs. The mode is only the first one. */
-    if (P.mode === 'manual'){
+    if (P.mode === 'manual' || A.breakout > 0){
       // 手動 — the prey does not travel on its own. It keeps an anchor, which only
       // you move; the signature then plays out around that spot.
       if (drag){ prey.ax = drag.x; prey.ay = drag.y; }
@@ -462,6 +463,7 @@ function bolt(){                      // B — break away, with or without a ste
   const away = sizePx() * 2.2 + vmax * .35;   // 手動 では居場所ごと動かす
   prey.ax += Math.cos(a) * away; prey.ay += Math.sin(a) * away;
   prey.rest = 0;                                              // interrupt a hopper's pause
+  A.breakout = .9;          // らせん・徘徊 は毎フレーム速度を決め直すので、その間だけ黙らせる
   A.hold = false;
   document.querySelectorAll('[data-a="hold"]').forEach(q => q.classList.remove('on'));
 }
@@ -470,7 +472,8 @@ function bolt(){                      // B — break away, with or without a ste
 let velSmooth = 0;
 function frame(now){
   const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
-  A.buzz = A.held ? 1 : Math.max(0, A.buzz - dt * 4);
+  A.buzz = (A.held || t < A.buzzUntil) ? 1 : Math.max(0, A.buzz - dt * 4);
+  A.breakout = Math.max(0, A.breakout - dt);
   A.flee = Math.max(0, A.flee - dt * 1.2);
   if (A.loom > 0){ loomPhase = Math.min(1, loomPhase + dt * .9); A.loom -= dt * .5; }
   else loomPhase = Math.max(0, loomPhase - dt * 1.6);
@@ -482,9 +485,12 @@ function frame(now){
   ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
   // looming enlarges the target stepwise — the strongest documented releaser
   const step = Math.round(loomPhase * 4) / 4;
-  drawPrey(ctx, prey.x, prey.y, prey.ang, sizePx() * (1 + step * 0.9), P.prey, t);
+  const shake = A.buzz * sizePx() * .11;      // 速度に頼ると、進路を決め直すモードで消える
+  const sx = (Math.random() - .5) * shake, sy = (Math.random() - .5) * shake;
+  drawPrey(ctx, prey.x + sx, prey.y + sy, prey.ang, sizePx() * (1 + step * 0.9), P.prey, t);
 
   rdVel.textContent = Math.round(pxToDps(velSmooth));
+  btnBuzz.classList.toggle('on', A.buzz > .05);
   requestAnimationFrame(frame);
 }
 
@@ -522,11 +528,11 @@ document.querySelectorAll('#acts button').forEach(b => {
   b.addEventListener('pointerdown', e => {
     e.preventDefault();
     if (a === 'hold'){ A.hold = !A.hold; b.classList.toggle('on', A.hold); }
-    else if (a === 'buzz'){ A.buzz = 1; A.held = true; b.classList.add('on'); }
+    else if (a === 'buzz'){ A.buzz = 1; A.held = true; A.buzzUntil = t + .9; }
     else if (a === 'flee'){ bolt(); b.classList.add('on'); }
     else { A[a] = 1; b.classList.add('on'); }
   });
-  const up = () => { if (a !== 'hold'){ if (a === 'buzz') A.held = false; b.classList.remove('on'); } };
+  const up = () => { if (a !== 'hold'){ if (a === 'buzz') A.held = false; else b.classList.remove('on'); } };
   ['pointerup','pointerleave','pointercancel'].forEach(k => b.addEventListener(k, up));
 });
 document.querySelectorAll('#preySel button').forEach(b => b.addEventListener('click', () => {
@@ -536,7 +542,7 @@ document.querySelectorAll('#preySel button').forEach(b => b.addEventListener('cl
 }));
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if (k === ' ' || k === 'a'){ A.buzz = 1; A.held = true; e.preventDefault(); }
+  if (k === ' ' || k === 'a'){ A.buzz = 1; A.held = true; A.buzzUntil = t + .9; e.preventDefault(); }
   if (k === 'b') bolt();
   if (k === 'c') A.hold = !A.hold;
   if (k === 'd') A.loom = 1;
