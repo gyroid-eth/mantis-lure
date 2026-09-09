@@ -210,6 +210,18 @@ select.wide{-webkit-appearance:none;appearance:none}
         <b style="color:var(--text)">らせん</b>— 中心の周りを規則的に回ります。文献で標準的に使われる誘発刺激で、手が離せないときの自動運転にも使えます。</div>
     </div>
 
+    <div class="fld">
+      <label>迫り方（D ボタン）</label>
+      <div class="seg" id="segLoom">
+        <button data-s="0" class="on">なめらか</button>
+        <button data-s="1">段階 0.8秒</button>
+      </div>
+      <div class="hint">なめらかは輝度エッジが連続的に広がる古典的な looming。原典を確認できているのはこちらで、
+        襲撃率 約60%（サイズ一定で視差だけ動かすと 15–35% に落ちる）。段階は「各段階 0.8 秒以上で最大反応」
+        という報告に合わせたものですが、<b style="color:var(--text)">その報告は本文を確認できていません</b>。
+        どちらが効くかは、あなたの個体で試すのが早いはずです。</div>
+    </div>
+
     <h2>COLOUR</h2>
     <div class="fld">
       <label>獲物の色<b id="vTgt" style="font-size:11px">#000000</b></label>
@@ -254,7 +266,7 @@ select.wide{-webkit-appearance:none;appearance:none}
 const LS = 'mantis-lure/v1';
 const P = Object.assign({
   prey: 0, sizeDeg: 15, distCm: 10, speedDps: 80,
-  tgt: '#000000', bg: '#F2F1EC', mode: 'manual', pxPerMm: 0, log: []
+  tgt: '#000000', bg: '#F2F1EC', mode: 'manual', loomStep: false, pxPerMm: 0, log: []
 }, JSON.parse(localStorage.getItem(LS) || '{}'));
 const save = () => localStorage.setItem(LS, JSON.stringify(P));
 
@@ -475,7 +487,13 @@ function frame(now){
   A.buzz = (A.held || t < A.buzzUntil) ? 1 : Math.max(0, A.buzz - dt * 4);
   A.breakout = Math.max(0, A.breakout - dt);
   A.flee = Math.max(0, A.flee - dt * 1.2);
-  if (A.loom > 0){ loomPhase = Math.min(1, loomPhase + dt * .9); A.loom -= dt * .5; }
+  /* Smooth is the default: the expanding luminance edge (classic looming) is the
+     one with a checked primary source behind it. The stepped mode exists because the
+     "at least 0.8 s per step" claim could not be traced to its paper — so it is offered
+     as something to test, at the dwell time it actually claims. */
+  const LOOM_DWELL = .85;               // 「各段階 0.8 秒以上」を確実に満たす値にする
+  const loomDur = P.loomStep ? LOOM_DWELL * 4 : 1.1;
+  if (A.loom > 0){ loomPhase = Math.min(1, loomPhase + dt / loomDur); A.loom -= dt / loomDur; }
   else loomPhase = Math.max(0, loomPhase - dt * 1.6);
 
   const sp = stepPrey(dt);
@@ -484,7 +502,7 @@ function frame(now){
 
   ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
   // looming enlarges the target stepwise — the strongest documented releaser
-  const step = Math.round(loomPhase * 4) / 4;
+  const step = P.loomStep ? Math.ceil(loomPhase * 4 - 1e-6) / 4 : loomPhase;
   const shake = A.buzz * sizePx() * .11;      // 速度に頼ると、進路を決め直すモードで消える
   const sx = (Math.random() - .5) * shake, sy = (Math.random() - .5) * shake;
   drawPrey(ctx, prey.x + sx, prey.y + sy, prey.ang, sizePx() * (1 + step * 0.9), P.prey, t);
@@ -581,6 +599,11 @@ function swatches(host, list, key, cur){
 }
 swatches($('swTgt'), TGT, 'tgt'); swatches($('swBg'), BGS, 'bg');
 
+document.querySelectorAll('#segLoom button').forEach(b => b.onclick = () => {
+  P.loomStep = b.dataset.s === '1';
+  document.querySelectorAll('#segLoom button').forEach(q => q.classList.toggle('on', q === b));
+  refresh();
+});
 document.querySelectorAll('#segMode button').forEach(b => b.onclick = () => {
   P.mode = b.dataset.m;
   document.querySelectorAll('#segMode button').forEach(q => q.classList.toggle('on', q === b)); refresh();
@@ -611,7 +634,7 @@ function record(){
     prey: NAME_EN[P.prey], size_deg: P.sizeDeg, size_mm: +sizeMm().toFixed(1),
     dist_cm: P.distCm, speed_deg_s: P.speedDps, obs_deg_s: Math.round(pxToDps(velSmooth)),
     target: P.tgt, background: P.bg, contrast: +contrast().toFixed(3),
-    mode: P.mode, calibrated: P.pxPerMm > 0
+    mode: P.mode, loom: P.loomStep ? 'stepped' : 'smooth', calibrated: P.pxPerMm > 0
   });
   refresh();
 }
@@ -642,6 +665,7 @@ addEventListener('pointerdown', keepAwake, { once:true });
 /* ══ boot ═══════════════════════════════════════════════ */
 document.querySelectorAll('#preySel button').forEach(b => b.classList.toggle('on', +b.dataset.p === P.prey));
 document.querySelectorAll('#segMode button').forEach(b => b.classList.toggle('on', b.dataset.m === P.mode));
+document.querySelectorAll('#segLoom button').forEach(b => b.classList.toggle('on', (b.dataset.s === '1') === P.loomStep));
 $('sSize').value = P.sizeDeg; $('sDist').value = P.distCm; $('sSpeed').value = P.speedDps;
 resize(); refresh(); requestAnimationFrame(frame);
 </script>
