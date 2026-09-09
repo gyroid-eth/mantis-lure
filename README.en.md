@@ -31,7 +31,7 @@ Every instrument, button and number lives outside it, in the metal frame — and
 | Species | How it moves |
 |---|---|
 | Housefly (イエバエ) | Never quite still. Wings beat even while it hovers |
-| Grasshopper (ショウリョウバッタ) | Big hops, long waits |
+| Grasshopper (オンブバッタ, *Atractomorpha*) | Big hops, long waits |
 | Cricket (エンマコオロギ) | Short quick hops, straight on to the next |
 | Jumping spider (ハエトリグモ) | Scuttles, then freezes dead still |
 

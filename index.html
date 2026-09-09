@@ -123,6 +123,7 @@ input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--am
 .seg button:last-child{border-right:0}
 .seg button.on{background:var(--metal);color:#1b1f1e}
 select.wide{-webkit-appearance:none;appearance:none}
+#calRuler{display:block;width:100%;height:62px;background:#F2F1EC;border-radius:3px;margin-top:2px}
 .wide{display:block;width:100%;border:1px solid var(--line);background:#1b1f1e;color:var(--metal);
   font-family:var(--mech);font-weight:300;font-size:12px;letter-spacing:.1em;padding:11px;border-radius:4px;cursor:pointer;margin-top:8px}
 .wide:active{background:var(--metal);color:#1b1f1e}
@@ -273,9 +274,10 @@ select.wide{-webkit-appearance:none;appearance:none}
       <select class="wide" id="selDevice" style="text-align:center"></select>
       <label style="margin-top:14px"><span data-t="lPpm">画面の目盛を実物に合わせる</span><b><span id="vPpm">5.20</span><em>px/mm</em></b></label>
       <input type="range" id="sPpm" min="2.2" max="13" step="0.02" value="5.2">
-      <div class="hint" data-th="h7">この設定を開いているあいだ、<b style="color:var(--text)">画面の下端に定規が出ます</b>。
-        実物の定規を当てて、目盛が合うまで上のつまみを動かしてください。合えば校正完了です。
-        端末を選ぶだけでも実用になりますが、ケースや表示倍率で変わるので、記録を残すなら実測を推奨します。</div>
+      <canvas id="calRuler" height="62"></canvas>
+      <div class="hint" data-th="h7"><b style="color:var(--text)">上の目盛に実物の定規を当てて</b>、数字が合うまでつまみを動かしてください。合えば校正完了です。
+        端末を選ぶだけでも実用になりますが、ケースや表示倍率で変わるので、記録を残すなら実測を推奨します。
+        「常に出す」にすると、獲物の大きさを確かめられるよう刺激面にも定規が出ます。</div>
       <div class="seg" id="segRuler" style="margin-top:10px">
         <button data-r="0" class="on" data-t="rulerDrawer">設定中だけ出す</button>
         <button data-r="1" data-t="rulerAlways">常に出す</button>
@@ -558,6 +560,28 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 
+function drawCalRuler(){
+  const c = $('calRuler'); if (!c) return;
+  const w = c.clientWidth; if (!w) return;
+  const dpr = Math.min(devicePixelRatio || 1, 3);
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(62 * dpr); }
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = '#F2F1EC'; g.fillRect(0, 0, w, 62);
+  const mm = ppm(), x0 = 10, span = Math.floor((w - x0 * 2) / mm);
+  if (span < 5) return;
+  g.strokeStyle = '#1b1f1e'; g.fillStyle = '#1b1f1e'; g.lineWidth = 1;
+  const y = 40;
+  g.beginPath(); g.moveTo(x0, y + .5); g.lineTo(x0 + span * mm, y + .5); g.stroke();
+  g.font = '10px ui-monospace,monospace'; g.textAlign = 'center';
+  for (let i = 0; i <= span; i++){
+    const x = x0 + i * mm, h = i % 10 === 0 ? 22 : (i % 5 === 0 ? 13 : 7);
+    g.beginPath(); g.moveTo(x + .5, y); g.lineTo(x + .5, y - h); g.stroke();
+    if (i % 10 === 0) g.fillText(i, x, y + 13);
+  }
+  g.textAlign = 'left'; g.font = '10px ui-monospace,monospace'; g.fillStyle = '#6f7570';
+  g.fillText('mm', x0, 14);
+}
 function drawRuler(g){
   const phone = W < 900;
   const mm = ppm(), y = H - (phone ? 132 : 78), x0 = phone ? 18 : 44;
@@ -619,7 +643,7 @@ const EN = {
   h4:'The three buttons above only choose <b style="color:var(--text)">who decides where it travels</b>. Each species’ own motion — the fly’s tremor, the grasshopper’s hop, the spider’s freeze — runs in every mode.<br><br><b style="color:var(--text)">Manual</b> — the prey does not travel by itself. It stays where you put it and misbehaves on the spot.<br><b style="color:var(--text)">Wander</b> — the prey picks its own way. You can still shove it with the stick.<br><b style="color:var(--text)">Spiral</b> — a fixed circuit around the centre. The standard eliciting stimulus, and a useful autopilot when your hands are busy.',
   h5:'Smooth is the classic looming stimulus, an expanding luminance edge. It is the one with a primary source behind it: about 60% strikes, against 15–35% when size is held constant and only disparity moves. Stepped follows a report of maximal response at 0.8 s or more per step, but <b style="color:var(--text)">that report could not be traced to a readable source</b>. Which one works is best settled on your own animal.',
   h6:'No behavioural evidence was found that colour matters independently of luminance. The main variable is the light–dark difference: the detection threshold is very low (Michelson ≈ 0.016), while a dark target on a bright field consistently beats the reverse. Treat this as a way to build contrast rather than to pick a colour.',
-  h7:'While these settings are open, <b style="color:var(--text)">a ruler appears along the bottom of the field</b>. Lay a real ruler against it and move the slider above until the graduations line up. Picking your device is usually good enough, but a case or display scaling can shift it, so measure if you intend to keep records.',
+  h7:'<b style="color:var(--text)">Lay a real ruler against the scale above</b> and move the slider until the numbers line up. Picking your device is usually good enough, but a case or display scaling can shift it, so measure if you intend to keep records. Set it to always show and a ruler also appears on the field, for checking the prey against it.',
   h8:'You can also clear it by pressing the strike counter twice. Export the CSV first.'
 };
 let JAcap = false;
@@ -666,6 +690,7 @@ function refresh(){
   $('btnClear').textContent = arming ? T('clearArm') : T('bClear');
   $('logState').textContent = T('logState', P.log.length);
   $('vPpm').textContent = (P.pxPerMm || GUESS()).toFixed(2);
+  drawCalRuler();
   $('calState').textContent = P.pxPerMm
     ? T('calDone', P.pxPerMm.toFixed(2)) : T('calNone', GUESS().toFixed(2));
   save();
@@ -733,7 +758,7 @@ canvas.addEventListener('pointermove', e => { if (drag) drag = pos(e); });
 ['pointerup','pointercancel'].forEach(k => canvas.addEventListener(k, () => drag = null));
 
 /* ══ drawer ═════════════════════════════════════════════ */
-$('btnDrawer').onclick = () => { const d = $('drawer'); d.classList.toggle('open'); $('btnDrawer').classList.toggle('on', d.classList.contains('open')); };
+$('btnDrawer').onclick = () => { const d = $('drawer'); d.classList.toggle('open'); drawCalRuler(); $('btnDrawer').classList.toggle('on', d.classList.contains('open')); };
 $('btnClose').onclick  = () => { $('drawer').classList.remove('open'); $('btnDrawer').classList.remove('on'); };
 const bind = (id, key, fn) => $(id).addEventListener('input', e => { P[key] = +e.target.value; (fn||refresh)(); });
 bind('sSize','sizeMm'); bind('sSpeed','speedMms');
