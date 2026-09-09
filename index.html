@@ -30,11 +30,19 @@ body{background:var(--slate);color:var(--text);font-family:var(--sans);
   background:linear-gradient(180deg,var(--panelhi),#252a28);
   border-bottom:1px solid var(--edge);box-shadow:0 2px 0 rgba(0,0,0,.35)}
 
-.dpad{flex:0 0 auto;display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,32px);gap:4px}
-.dpad button{border:1px solid var(--line);background:#1b1f1e;color:var(--amber);
-  border-radius:3px;font-size:13px;padding:0;cursor:pointer;transition:none}
-.dpad button:active,.dpad button.on{background:var(--amber);color:#1b1f1e}
-.u{grid-column:2;grid-row:1}.l{grid-column:1;grid-row:2}.d{grid-column:2;grid-row:2}.r{grid-column:3;grid-row:2}
+.stick{flex:0 0 auto;position:relative;width:92px;height:92px;border-radius:50%;
+  background:radial-gradient(circle at 50% 42%,#232826,#141817);border:1px solid var(--line);
+  touch-action:none;cursor:grab}
+.stick::before{content:'';position:absolute;inset:12px;border-radius:50%;border:1px dashed #363c39}
+.knob{position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;
+  background:linear-gradient(#6f7570,#414743);border:1px solid #808680;pointer-events:none}
+.stick.on .knob{background:linear-gradient(#f0bf4a,#c98d10)}
+.stick.on{cursor:grabbing}
+.meter{flex:0 0 auto;width:132px}
+.meter .track{position:relative;height:9px;background:#1b1f1e;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.meter .band{position:absolute;top:0;bottom:0;background:#3d4a35}
+.meter .fill{position:absolute;top:0;bottom:0;left:0;background:var(--amber)}
+.meter .num{font-family:var(--mech);font-size:10px;color:var(--metaldim);letter-spacing:.06em;margin-top:2px}
 
 .prey{flex:0 0 auto;display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
 .prey button{border:0;border-right:1px solid var(--line);background:#1b1f1e;color:var(--metaldim);
@@ -118,29 +126,11 @@ select.wide{-webkit-appearance:none;appearance:none}
 .close{position:absolute;top:10px;right:12px;border:0;background:transparent;color:var(--metaldim);font-size:22px;cursor:pointer;line-height:1;padding:4px 8px}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
-/* ── calibration overlay ─────────────────────────────── */
-.cal{position:absolute;inset:0;background:#f2f1ec;color:#1b1f1e;z-index:9;display:none;
-  flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
-.cal.open{display:flex}
-.cal p{margin:0;font-size:13.5px;line-height:1.8;max-width:46ch;color:#3a403d}
-.cal .bar{height:26px;background:#1b1f1e;border-radius:2px}
-.cal .marks{font-family:var(--mech);font-size:11px;letter-spacing:.12em;color:#6f7570}
-.cal input[type=range]{max-width:420px}
-.cal input[type=range]::-webkit-slider-runnable-track{background:#c3c0b6}
-.cal button{border:1px solid #1b1f1e;background:#1b1f1e;color:#f2f1ec;font-family:var(--mech);
-  font-weight:300;letter-spacing:.1em;font-size:13px;padding:12px 26px;border-radius:4px;cursor:pointer}
 </style>
 </head>
 <body>
 
 <div class="console">
-  <div class="dpad" id="dpad">
-    <button class="u" data-d="u" aria-label="上へ">▲</button>
-    <button class="l" data-d="l" aria-label="左へ">◀</button>
-    <button class="d" data-d="d" aria-label="下へ">▼</button>
-    <button class="r" data-d="r" aria-label="右へ">▶</button>
-  </div>
-
   <div class="prey" id="segMode">
     <button data-m="manual" class="on" title="獲物は自分では移動しない。十字キーとドラッグで動かした所に留まり、その場で暴れる">手動</button>
     <button data-m="wander" title="獲物が自分で行き先を決めてうろつく。十字キーで押しやることもできる">徘徊</button>
@@ -155,9 +145,15 @@ select.wide{-webkit-appearance:none;appearance:none}
   </div>
 
   <div class="reads">
-    <div class="rd"><i>SIZE</i><b id="rdSize">15<em>°</em></b></div>
-    <div class="rd"><i>VELOCITY</i><b id="rdVel">0<em>°/s</em></b></div>
+    <div class="rd"><i>SIZE</i><b id="rdSize">26<em>mm</em></b></div>
+    <div class="meter">
+      <i style="display:block;font-family:var(--mech);font-weight:300;font-size:9px;letter-spacing:.14em;color:var(--metaldim);font-style:normal;margin-bottom:3px">VELOCITY</i>
+      <div class="track"><span class="band" id="vBand"></span><span class="fill" id="vFill"></span></div>
+      <div class="num" id="vNum">0 mm/s</div>
+    </div>
   </div>
+
+  <div class="stick" id="stick" aria-label="獲物を動かす"><div class="knob" id="knob"></div></div>
 
   <div class="acts" id="acts">
     <button data-a="buzz"><b>A</b><span>ブルブル</span></button>
@@ -174,7 +170,7 @@ select.wide{-webkit-appearance:none;appearance:none}
 
 <div class="stage" id="stage">
   <canvas id="field"></canvas>
-  <div class="calwarn" id="calWarn">未校正 — 角度は推定値です。設定 → CALIBRATION で端末を選ぶか定規を合わせてください</div>
+  <div class="calwarn" id="calWarn">未校正 — 画面の mm が実寸と一致していません。設定 → CALIBRATION で端末を選ぶか、画面の定規を実物に合わせてください</div>
 
   <div class="log">
     <button class="strike" id="btnStrike">襲った</button>
@@ -186,19 +182,21 @@ select.wide{-webkit-appearance:none;appearance:none}
 
     <h2>STIMULUS</h2>
     <div class="fld">
-      <label>獲物の大きさ<b><span id="vSize">15</span><em>°</em>　<span id="vSizeMm" style="font-size:11px;color:var(--metaldim)">26mm</span></b></label>
-      <input type="range" id="sSize" min="4" max="35" step="1" value="15">
-      <div class="hint">Prete et al. 2013 では種差が大きい。Sphodromantis lineola は 10–20° で襲撃率が最大（逆U字）、Parasphendale affinis は 9° の円盤でピーク・襲撃閾値 6.9°、Popa spurca は 44° まで反応率が上昇し続ける。まず 15° から始めて、襲う角度を自分の個体で探すのが確実です。</div>
+      <label>獲物の大きさ<b><span id="vSize">26</span><em>mm</em>　<span id="vSizeDeg" style="font-size:11px;color:var(--metaldim)">15° @10cm</span></b></label>
+      <input type="range" id="sSize" min="3" max="120" step="1" value="26">
+      <div class="hint">画面に出る実寸を直接指定します。<b style="color:var(--text)">視距離は設定ではありません</b> — カマキリがどこにいるかは決められず、歩けば変わるからです。下の換算表を目安にしてください。Prete et al. 2013 では種差が大きい。Sphodromantis lineola は 10–20° で襲撃率が最大（逆U字）、Parasphendale affinis は 9° の円盤でピーク・襲撃閾値 6.9°、Popa spurca は 44° まで反応率が上昇し続ける。まず 15° から始めて、襲う角度を自分の個体で探すのが確実です。</div>
     </div>
     <div class="fld">
-      <label>視距離（カマキリ→画面）<b><span id="vDist">10</span><em>cm</em></b></label>
-      <input type="range" id="sDist" min="3" max="40" step="1" value="10">
-      <div class="hint">同じ角度でも距離が変われば実寸が変わります。捕獲圏（前脚が届く距離）に置くと襲撃が出やすい。</div>
+      <label>最高速度<b><span id="vSpeed">140</span><em>mm/s</em></b></label>
+      <input type="range" id="sSpeed" min="10" max="600" step="5" value="140">
+      <div class="hint">画面上を実際に動く速さです。報告値は角速度なので距離に依存します — Prete et al. 2013 の条件 74–180°/s、O'Keeffe et al. 2022 のモデル 82°/s は、視距離 10cm ならおよそ 129–314 mm/s と 143 mm/s に当たります。メーターの緑帯は 45–120°/s を 10cm 換算した範囲です。</div>
     </div>
+
     <div class="fld">
-      <label>最高速度<b><span id="vSpeed">80</span><em>°/s</em></b></label>
-      <input type="range" id="sSpeed" min="10" max="200" step="5" value="80">
-      <div class="hint">Prete et al. 2013 が用いた条件は 74–180°/s、O'Keeffe et al. 2022 のモデルは 82°/s。いずれも「実験条件」であって最適値の実測ではありません。80 はその中央付近の出発点です。</div>
+      <label>視距離ごとの視角</label>
+      <div class="hint" id="degTable" style="font-family:var(--mech);font-size:12px;letter-spacing:.04em;color:var(--amber);line-height:2"></div>
+      <div class="hint">襲われた距離を測れたときは、その距離の欄を読めば視角が分かります。CSV には実寸(mm)と、
+        10cm 換算の視角を記録しています。</div>
     </div>
 
     <h2>MOTION</h2>
@@ -238,9 +236,15 @@ select.wide{-webkit-appearance:none;appearance:none}
     <div class="fld">
       <div class="hint" id="calState">未校正 — 実寸の計算に定規合わせが必要です。</div>
       <select class="wide" id="selDevice" style="text-align:center"></select>
-      <button class="wide" id="btnCal">定規を合わせる（より正確）</button>
-      <div class="hint">端末を選ぶだけでも実用になりますが、ケースやスケーリングで変わるので、
-        記録を残すなら定規合わせを推奨します。</div>
+      <label style="margin-top:14px">画面の目盛を実物に合わせる<b><span id="vPpm">5.20</span><em>px/mm</em></b></label>
+      <input type="range" id="sPpm" min="2.2" max="13" step="0.02" value="5.2">
+      <div class="hint">この設定を開いているあいだ、<b style="color:var(--text)">画面の下端に定規が出ます</b>。
+        実物の定規を当てて、目盛が合うまで上のつまみを動かしてください。合えば校正完了です。
+        端末を選ぶだけでも実用になりますが、ケースや表示倍率で変わるので、記録を残すなら実測を推奨します。</div>
+      <div class="seg" id="segRuler" style="margin-top:10px">
+        <button data-r="0" class="on">設定中だけ出す</button>
+        <button data-r="1">常に出す</button>
+      </div>
     </div>
 
     <h2>RECORD</h2>
@@ -251,23 +255,24 @@ select.wide{-webkit-appearance:none;appearance:none}
     </div>
   </aside>
 
-  <div class="cal" id="cal">
-    <p>画面に出ている黒い帯を、<b>実物の定規で 100 mm ちょうど</b>になるまでスライダーで伸縮させてください。これで獲物の実寸と視角が正しく計算できます。</p>
-    <div class="bar" id="calBar" style="width:380px"></div>
-    <div class="marks">← 100 mm →</div>
-    <input type="range" id="calRange" min="150" max="900" step="1" value="380">
-    <button id="calDone">合った</button>
-  </div>
 </div>
 
 <script>
 'use strict';
 /* ══ state ══════════════════════════════════════════════ */
 const LS = 'mantis-lure/v1';
+/* The viewing distance is not a setting. Where the mantis sits is its business, and it
+   changes as it walks. So the app controls what it can actually put on the glass —
+   a length in millimetres and a speed in millimetres per second — and every angle is
+   reported as a conditional reference at a stated distance. */
+const REF_MM = 100;                    // the distance the reference angles assume: 10 cm
 const P = Object.assign({
-  prey: 0, sizeDeg: 15, distCm: 10, speedDps: 80,
+  prey: 0, sizeMm: 26, speedMms: 140, rulerAlways: false,
   tgt: '#000000', bg: '#F2F1EC', mode: 'manual', loomStep: false, pxPerMm: 0, log: []
 }, JSON.parse(localStorage.getItem(LS) || '{}'));
+if (P.sizeDeg && !P.sizeMm)            // migrate saved settings from the degrees-first version
+  P.sizeMm = Math.round(2 * ((P.distCm || 10) * 10) * Math.tan(P.sizeDeg * Math.PI / 360));
+if (P.speedDps && !P.speedMms) P.speedMms = Math.round(REF_MM * P.speedDps * Math.PI / 180);
 const save = () => localStorage.setItem(LS, JSON.stringify(P));
 
 const A = { buzz:0, held:false, buzzUntil:0, breakout:0, flee:0, hold:false, loom:0 };
@@ -309,10 +314,12 @@ const DEVICES = [
 ];
 const GUESS = () => (matchMedia('(pointer:coarse)').matches ? 5.20 : 3.78);
 const ppm = () => P.pxPerMm || GUESS();
-const sizeMm = () => 2 * (P.distCm * 10) * Math.tan(P.sizeDeg * Math.PI / 360);
+const sizeMm  = () => P.sizeMm;
+const degAt   = (mm, dmm) => 2 * Math.atan(mm / (2 * dmm)) * 180 / Math.PI;
+const sizeDeg = () => degAt(P.sizeMm, REF_MM);
 const sizePx = () => Math.max(6, sizeMm() * ppm());
-const dpsToPx = dps => (2 * (P.distCm * 10) * Math.tan(dps * Math.PI / 360)) * ppm();
-const pxToDps = px => 2 * Math.atan(px / (2 * P.distCm * 10 * ppm())) * 180 / Math.PI;
+const mmsToPx = mms => mms * ppm();                       // mm/s -> px/s
+const pxToMms = px => px / ppm();                         // px/s -> mm/s
 
 const lum = hex => {                       // relative luminance, sRGB
   const c = [1,3,5].map(i => parseInt(hex.substr(i,2),16)/255)
@@ -381,7 +388,7 @@ function drawPrey(g, x, y, ang, s, kind, t){
 let last = performance.now(), t = 0, drag = null, loomPhase = 0;
 
 function stepPrey(dt){
-  const vmax = dpsToPx(P.speedDps);          // px/s
+  const vmax = mmsToPx(P.speedMms);          // px/s
   const acc  = vmax * 3.2;
 
   if (A.hold){ prey.vx *= 0.82; prey.vy *= 0.82; }
@@ -464,7 +471,7 @@ function stepPrey(dt){
 
 function bolt(){                      // B — break away, with or without a steering input
   A.flee = 1;
-  const vmax = dpsToPx(P.speedDps);
+  const vmax = mmsToPx(P.speedMms);
   const sp = Math.hypot(prey.vx, prey.vy);
   let a;
   if (dir.x || dir.y)      a = Math.atan2(dir.y, dir.x);      // steer if the pad is held
@@ -498,7 +505,7 @@ function frame(now){
 
   const sp = stepPrey(dt);
   velSmooth += (sp - velSmooth) * Math.min(1, dt * 6);
-  activity = A.hold ? 0 : Math.min(1, sp / Math.max(dpsToPx(P.speedDps) * .35, 1));
+  activity = A.hold ? 0 : Math.min(1, sp / Math.max(mmsToPx(P.speedMms) * .35, 1));
 
   ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
   // looming enlarges the target stepwise — the strongest documented releaser
@@ -507,25 +514,51 @@ function frame(now){
   const sx = (Math.random() - .5) * shake, sy = (Math.random() - .5) * shake;
   drawPrey(ctx, prey.x + sx, prey.y + sy, prey.ang, sizePx() * (1 + step * 0.9), P.prey, t);
 
-  rdVel.textContent = Math.round(pxToDps(velSmooth));
+  const mms = pxToMms(velSmooth), FS = 600;               // full scale of the meter, mm/s
+  vFill.style.width = Math.min(100, mms / FS * 100).toFixed(1) + '%';
+  vNum.textContent = Math.round(mms) + ' mm/s';
   btnBuzz.classList.toggle('on', A.buzz > .05);
+  if ($('drawer').classList.contains('open') || P.rulerAlways) drawRuler(ctx);
   requestAnimationFrame(frame);
+}
+
+function drawRuler(g){
+  const mm = ppm(), y = H - 78, x0 = 44;   // clear of the strike button and its gradient
+  const span = Math.min(150, Math.floor((W - x0 * 2) / mm));
+  if (span < 20) return;
+  g.save(); g.globalAlpha = .5; g.strokeStyle = P.tgt; g.fillStyle = P.tgt;
+  g.lineWidth = 1; g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + span * mm, y); g.stroke();
+  g.font = '10px ui-monospace,monospace'; g.textAlign = 'center';
+  for (let i = 0; i <= span; i++){
+    const x = x0 + i * mm, h = i % 10 === 0 ? 13 : (i % 5 === 0 ? 8 : 4);
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - h); g.stroke();
+    if (i % 10 === 0 && i) g.fillText(i, x, y + 13);
+  }
+  g.textAlign = 'left';
+  g.fillText('実物の定規を当てて、目盛が合うまで「画面の目盛を実物に合わせる」を動かす', x0, y - 26);
+  g.restore();
 }
 
 /* ══ readouts ═══════════════════════════════════════════ */
 const $ = id => document.getElementById(id);
 function refresh(){
+  const b0 = REF_MM * 45 * Math.PI / 180, b1 = REF_MM * 120 * Math.PI / 180;   // 45–120°/s, at 10 cm
+  vBand.style.left  = (b0 / 600 * 100) + '%';
+  vBand.style.width = ((b1 - b0) / 600 * 100) + '%';
   const est = !P.pxPerMm;
-  $('rdSize').innerHTML = P.sizeDeg + '<em>°</em>' + (est ? '<em> 推定</em>' : '');
+  $('rdSize').innerHTML = P.sizeMm + '<em>mm</em>';
   $('rdSize').classList.toggle('est', est);
   $('calWarn').hidden = !est;
   const c = contrast();
   const cc = $('vCon'); cc.textContent = c.toFixed(2); cc.classList.toggle('warn', c < .5);
-  $('vSize').textContent = P.sizeDeg; $('vSizeMm').textContent = sizeMm().toFixed(0) + 'mm';
-  $('vDist').textContent = P.distCm; $('vSpeed').textContent = P.speedDps;
+  $('vSize').textContent = P.sizeMm; $('vSizeDeg').textContent = sizeDeg().toFixed(0) + '° @10cm';
+  $('degTable').innerHTML = [5, 10, 15, 20, 30].map(cm =>
+    cm + 'cm → ' + degAt(P.sizeMm, cm * 10).toFixed(1) + '°').join('　/　');
+  $('vSpeed').textContent = P.speedMms;
   $('vTgt').textContent = P.tgt.toUpperCase(); $('vBg').textContent = P.bg.toUpperCase();
   $('cStrike').textContent = P.log.length;
   $('logState').textContent = '記録 ' + P.log.length + ' 件';
+  $('vPpm').textContent = (P.pxPerMm || GUESS()).toFixed(2);
   $('calState').textContent = P.pxPerMm
     ? '校正済み — 1 mm = ' + P.pxPerMm.toFixed(2) + ' CSS px'
     : '未校正 — 1 mm = ' + GUESS().toFixed(2) + ' CSS px と仮定中（推定）。';
@@ -534,13 +567,27 @@ function refresh(){
 
 /* ══ controls ═══════════════════════════════════════════ */
 const DV = { u:[0,-1], d:[0,1], l:[-1,0], r:[1,0] };
-document.querySelectorAll('#dpad button').forEach(b => {
-  const v = DV[b.dataset.d];
-  const on  = e => { e.preventDefault(); dir.x = v[0]; dir.y = v[1]; b.classList.add('on'); };
-  const off = e => { if (e) e.preventDefault(); dir.x = 0; dir.y = 0; b.classList.remove('on'); };
-  b.addEventListener('pointerdown', on);
-  ['pointerup','pointerleave','pointercancel'].forEach(k => b.addEventListener(k, off));
-});
+/* An analog stick, not four keys: the prey needs a slow creep as much as a dart,
+   and one thumb should reach both this and the action buttons. */
+(function(){
+  const st = $('stick'), kn = $('knob');
+  let id = null;
+  const home = () => { dir.x = dir.y = 0; kn.style.transform = ''; st.classList.remove('on'); id = null; };
+  const move = e => {
+    const b = st.getBoundingClientRect(), r = b.width / 2 - 8;
+    let dx = e.clientX - (b.left + b.width / 2), dy = e.clientY - (b.top + b.height / 2);
+    const d = Math.hypot(dx, dy);
+    if (d > r){ dx *= r / d; dy *= r / d; }
+    kn.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px)';
+    dir.x = dx / r; dir.y = dy / r;                       // magnitude carries speed
+  };
+  st.addEventListener('pointerdown', e => {
+    e.preventDefault(); id = e.pointerId; st.setPointerCapture(id);
+    st.classList.add('on'); move(e);
+  });
+  st.addEventListener('pointermove', e => { if (id === e.pointerId) move(e); });
+  ['pointerup','pointercancel'].forEach(k => st.addEventListener(k, e => { if (id === e.pointerId) home(); }));
+})();
 document.querySelectorAll('#acts button').forEach(b => {
   const a = b.dataset.a;
   b.addEventListener('pointerdown', e => {
@@ -583,7 +630,7 @@ canvas.addEventListener('pointermove', e => { if (drag) drag = pos(e); });
 $('btnDrawer').onclick = () => { const d = $('drawer'); d.classList.toggle('open'); $('btnDrawer').classList.toggle('on', d.classList.contains('open')); };
 $('btnClose').onclick  = () => { $('drawer').classList.remove('open'); $('btnDrawer').classList.remove('on'); };
 const bind = (id, key, fn) => $(id).addEventListener('input', e => { P[key] = +e.target.value; (fn||refresh)(); });
-bind('sSize','sizeDeg'); bind('sDist','distCm'); bind('sSpeed','speedDps');
+bind('sSize','sizeMm'); bind('sSpeed','speedMms');
 
 const TGT = ['#000000','#2b2118','#4a3b1e','#7a1f14','#1d3b2a','#5a5a5a'];
 const BGS = ['#F2F1EC','#FFFFFF','#E8EFD8','#F6E7C4','#D8E4F0','#BFC4B8'];
@@ -610,29 +657,24 @@ document.querySelectorAll('#segMode button').forEach(b => b.onclick = () => {
 });
 
 /* ══ calibration ════════════════════════════════════════ */
+$('sPpm').addEventListener('input', e => { P.pxPerMm = +e.target.value; refresh(); });
+document.querySelectorAll('#segRuler button').forEach(b => b.onclick = () => {
+  P.rulerAlways = b.dataset.r === '1';
+  document.querySelectorAll('#segRuler button').forEach(q => q.classList.toggle('on', q === b));
+  refresh();
+});
 const selD = $('selDevice');
 DEVICES.forEach(([n, v]) => { const o = document.createElement('option'); o.value = v; o.textContent = n; selD.appendChild(o); });
 selD.value = String(P.pxPerMm || 0);
-selD.onchange = e => { P.pxPerMm = +e.target.value; refresh(); };
-$('btnCal').onclick = () => {
-  $('cal').classList.add('open');
-  $('calRange').value = P.pxPerMm ? Math.round(P.pxPerMm * 100) : 380;
-  $('calBar').style.width = $('calRange').value + 'px';
-};
-$('calRange').oninput = e => $('calBar').style.width = e.target.value + 'px';
-$('calDone').onclick = () => {
-  P.pxPerMm = (+$('calRange').value) / 100;
-  $('cal').classList.remove('open');
-  selD.value = DEVICES.some(d => d[1] === P.pxPerMm) ? String(P.pxPerMm) : '0';
-  refresh();
-};
+selD.onchange = e => { P.pxPerMm = +e.target.value; $('sPpm').value = P.pxPerMm || GUESS(); refresh(); };
 
 /* ══ record ═════════════════════════════════════════════ */
 function record(){
   P.log.push({
     ts: new Date().toISOString(),
-    prey: NAME_EN[P.prey], size_deg: P.sizeDeg, size_mm: +sizeMm().toFixed(1),
-    dist_cm: P.distCm, speed_deg_s: P.speedDps, obs_deg_s: Math.round(pxToDps(velSmooth)),
+    prey: NAME_EN[P.prey], size_mm: P.sizeMm, size_deg: +sizeDeg().toFixed(1),
+    speed_mm_s: P.speedMms, obs_mm_s: Math.round(pxToMms(velSmooth)),
+    deg_at_10cm: +sizeDeg().toFixed(1),
     target: P.tgt, background: P.bg, contrast: +contrast().toFixed(3),
     mode: P.mode, loom: P.loomStep ? 'stepped' : 'smooth', calibrated: P.pxPerMm > 0
   });
@@ -666,7 +708,8 @@ addEventListener('pointerdown', keepAwake, { once:true });
 document.querySelectorAll('#preySel button').forEach(b => b.classList.toggle('on', +b.dataset.p === P.prey));
 document.querySelectorAll('#segMode button').forEach(b => b.classList.toggle('on', b.dataset.m === P.mode));
 document.querySelectorAll('#segLoom button').forEach(b => b.classList.toggle('on', (b.dataset.s === '1') === P.loomStep));
-$('sSize').value = P.sizeDeg; $('sDist').value = P.distCm; $('sSpeed').value = P.speedDps;
+$('sSize').value = P.sizeMm; $('sPpm').value = P.pxPerMm || GUESS();
+document.querySelectorAll('#segRuler button').forEach(b => b.classList.toggle('on', (b.dataset.r === '1') === P.rulerAlways)); $('sSpeed').value = P.speedMms;
 resize(); refresh(); requestAnimationFrame(frame);
 </script>
 </body>
