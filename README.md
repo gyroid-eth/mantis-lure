@@ -1,119 +1,114 @@
 # Mantis Lure
 
-A single-file, browser-based **lure for a live praying mantis**. Lay a tablet flat, drive the on-screen
-prey with the thumbstick and the A/B/C/D buttons, and let the mantis hunt it through the glass. Prey
-size, speed, colour and contrast are parametric; every strike can be logged and exported as CSV.
-No build step, no dependencies — just open `index.html`.
+**日本語** / [English](README.en.md)
 
-**▶ Live demo: https://gyroid-eth.github.io/mantis-lure/**
+拾ったカマキリに、画面越しに狩りをさせるための単一ファイル Web アプリ。タブレットを寝かせて置き、
+スティックと A/B/C/D ボタンで画面上の獲物を操って、実物のカマキリに襲わせる。獲物の**実寸・速度・
+色・コントラスト**をパラメトリックに変えられ、襲撃を記録して CSV に書き出せる。
+ビルド不要・依存ゼロで、`index.html` を開くだけ。
 
-![The app in use — a housefly on a plain bright field](screenshots/hero.png)
+**▶ ライブデモ: https://gyroid-eth.github.io/mantis-lure/**
 
-> 拾ったカマキリに、画面越しに狩りをさせるための単一ファイル Web アプリです。タブレットを寝かせて置き、
-> スティックと A/B/C/D ボタンで画面上の獲物（ハエ・バッタ・コオロギ・クモ）を操ります。
-> 獲物の実寸・速度・色・コントラストを変えられ、襲撃を記録して CSV に書き出せます。
+![実際の画面 — 明るい無地の場を歩くイエバエ](screenshots/hero.png)
 
-## The design problem
+## 設計の芯
 
-One screen, two audiences with completely different visual systems.
+1枚の画面に、視覚系のまったく違う観客が2人いる。
 
-A mantis responds to a **small dark shape moving on a plain bright field**. Decoration is noise to it.
-Its keeper is the opposite: without decoration there is nothing to look at. Mixing the two muddies both.
+カマキリは**明るい無地の場に浮かぶ小さな暗い塊**に反応する。装飾はすべてノイズになる。
+飼い主は逆で、装飾がなければ見るものがない。混ぜると両方が濁る。
 
-So the two are kept physically apart. Inside the field there is nothing but the background and the prey.
-Every instrument, button and number lives outside it, in the metal frame — and the console sits along the
-**top edge**, so your hand never crosses the stimulus while you play.
+だから2つを物理的に分けてある。**覗き窓の中には背景と獲物しかない。** 計器もボタンも数値も、
+すべて外側の金属の枠に置く。操作卓は**画面の上端**に固定してあるので、遊んでいるあいだ手が刺激面を
+横切らない。
 
-![The console](screenshots/console.png)
+![操作卓](screenshots/console.png)
 
-## Prey
+## 獲物
 
-![The four prey](screenshots/prey.png)
+![獲物4種](screenshots/prey.png)
 
-| Species | How it moves |
+| 種 | 動きの癖 |
 |---|---|
-| Housefly (イエバエ) | Never quite still. Wings beat even while it hovers |
-| Grasshopper (ショウリョウバッタ) | Big hops, long waits |
-| Cricket (エンマコオロギ) | Short quick hops, straight on to the next |
-| Jumping spider (ハエトリグモ) | Scuttles, then freezes dead still |
+| イエバエ | 止まらない。ホバー中も翅が羽ばたく |
+| ショウリョウバッタ | 大きく跳んで、長く待つ |
+| エンマコオロギ | 小刻みに跳ねて、すぐ次へ |
+| ハエトリグモ | 走っては固まる。止まると完全に動かない |
 
-The artwork is SVG with **one path per body part** — abdomen, wings, legs, antennae — each with its own
-pivot. Parts are rotated at runtime, so the wingbeat and the leg cadence follow the speed. Movement, not
-shape, is what releases a strike, so the prey is never a rigid stamp.
+シルエットは SVG で、**胴・翅・脚・触角がそれぞれ別のパス**になっていて、各パーツが自分のピボットを
+持つ。実行時にパーツを回すので、羽ばたきと脚の運びが速度に追随する。襲撃の引き金は形ではなく動きなので、
+1枚の硬いスタンプにはしていない。
 
-## Controls
+## 操作
 
-| Control | What it does |
+| 操作 | 動作 |
 |---|---|
-| Thumbstick | Moves the prey. How far you push is how fast it goes |
-| Drag on the field | Pulls the prey to your finger |
-| **A** | Buzz — shudder in place |
-| **B** | Flee — bolt away |
-| **C** | Hold — freeze |
-| **D** | Loom — swell towards the viewer |
-| 手動 / 徘徊 / らせん | Who decides where it travels: you, the prey, or a fixed spiral |
-| 襲った | Log a strike under the current conditions |
+| スティック | 獲物を動かす。倒した量がそのまま速さになる |
+| 画面を直接ドラッグ | 獲物を指の位置へ引き寄せる |
+| **A** | ブルブル — その場で震える |
+| **B** | 逃げる — 一気に跳ねて離れる |
+| **C** | 静止 — 止める |
+| **D** | 迫る — 手前に迫るように膨らむ |
+| 手動 / 徘徊 / らせん | 行き先を誰が決めるか。あなた / 獲物 / 決まったらせん |
+| 襲った | いまの条件で記録を1件残す |
 
-The keyboard works too (arrows, space/A, B, C, D). Speed is shown as a meter rather than a number; the
-green band marks where the reported values cluster (45–120 °/s, converted at a 10 cm viewing distance).
+キーボードも使える（矢印キー・space/A・B・C・D）。速度は数値ではなくメーターで出る。緑の帯は報告値が
+集まる範囲（45–120 °/s を視距離 10cm で換算したもの）。
 
-**手動 / 徘徊 / らせん** only chooses who steers. Each species' own motion — the fly's tremor, the
-grasshopper's hop, the spider's freeze — runs in every mode. In 手動 the prey keeps an anchor that only
-you move, so it stays where you put it and misbehaves on the spot.
+**手動 / 徘徊 / らせん は「誰が行き先を決めるか」だけを切り替える。** 種ごとの動きの癖——ハエの微動、
+バッタの跳躍、クモの静止——はどのモードでも常に働く。手動では獲物が「居場所」を持ち、それを動かせるのは
+あなただけなので、置いた所に留まってその場で暴れる。
 
-## Calibration, and why there is no viewing-distance setting
+## 校正と、視距離の設定を置かない理由
 
-![Calibration with the on-screen ruler](screenshots/calibration.png)
+![画面の定規で校正する](screenshots/calibration.png)
 
-An early version had a *viewing distance* slider. It was a lie: where the mantis sits is not something
-the software decides, and it changes as the animal walks. So this app only controls what it can actually
-put on the glass — **a length in millimetres and a speed in millimetres per second**. Angles are reported
-as conditional references at a stated distance, and the settings panel carries a conversion table
-(5 cm → 29°, 10 cm → 15°, …). When you can measure the distance at which a strike happened, read that row.
+初期版には「視距離」スライダーがあった。あれは嘘だった。**カマキリがどこにいるかはソフトが決めることでは
+なく、歩けば変わる。** だからこのアプリが制御するのは、実際にガラスの上に置けるもの——**長さ(mm)と
+速さ(mm/s)**だけにしてある。角度はすべて「視距離◯cm なら」という条件つきの参考値として表示し、
+設定画面に距離ごとの換算表（5cm → 29°、10cm → 15°…）を置いた。襲われた距離を測れたときは、その行を読む。
 
-**Millimetres are only millimetres once calibrated**, because on-screen length depends on the device's
-pixel density. Open the settings and a **ruler appears along the bottom of the field**: lay a real ruler
-against it and move the slider until the graduations line up. Picking your device from the preset list is
-usually good enough. The value is stored on the device.
+**校正しないと mm は mm にならない。** 画面上の長さは端末の画素密度に依存するからである。設定を開くと
+**画面の下端に定規が出る**ので、実物の定規を当てて、目盛が合うまでつまみを動かす。端末プリセットを
+選ぶだけでも実用になる。値は端末に保存される。
 
-## Where the defaults come from
+## 既定値の根拠
 
-| Setting | Default | Basis |
+| 項目 | 既定値 | 根拠 |
 |---|---|---|
-| Size | 26 mm (≈15° at 10 cm) | Strongly species-dependent. *Sphodromantis lineola* strikes most at 10–20° (an inverted U); *Parasphendale affinis* peaks at a 9° disc with a 6.9° threshold; *Popa spurca* keeps increasing up to 44°. [Prete et al. 2013](https://doi.org/10.1242/jeb.089474) |
-| Speed | 140 mm/s (≈80 °/s at 10 cm) | Reported figures are experimental *conditions*, not measured optima: 74–180 °/s in [Prete et al. 2013](https://doi.org/10.1242/jeb.089474), 82 °/s as the model input in [O'Keeffe et al. 2022](https://doi.org/10.1371/journal.pcbi.1009666) |
-| Contrast | Dark prey on a bright field | All three species struck more at a dark target on white than at the reverse. [Prete et al. 2013](https://doi.org/10.1242/jeb.089474) |
-| Colour | Presentation only | No behavioural evidence was found that wavelength matters independently of luminance. Receptor spectral sensitivities are known ([Zhu et al. 2025](https://doi.org/10.1007/s00359-025-01776-z)), which is a different claim |
-| **D** (loom) | Smooth expansion | An expanding luminance edge drew ~60% strikes; holding size constant and moving only disparity dropped it to 15–35%. [Nityananda et al. 2019](https://doi.org/10.1242/jeb.198614) |
+| 大きさ | 26 mm（10cm で約 15°）| 種差が大きい。*Sphodromantis lineola* は 10–20° で襲撃率が最大（逆U字）、*Parasphendale affinis* は 9° の円盤でピーク・閾値 6.9°、*Popa spurca* は 44° まで上昇し続ける。[Prete et al. 2013](https://doi.org/10.1242/jeb.089474) |
+| 速度 | 140 mm/s（10cm で約 80 °/s）| 報告値は実験の**条件**であって最適値の実測ではない。[Prete et al. 2013](https://doi.org/10.1242/jeb.089474) の 74–180 °/s、[O'Keeffe et al. 2022](https://doi.org/10.1371/journal.pcbi.1009666) のモデル入力 82 °/s |
+| コントラスト | 暗い獲物 / 明るい背景 | 3種すべてで、白地に黒い標的が逆より高い襲撃率。[Prete et al. 2013](https://doi.org/10.1242/jeb.089474) |
+| 色 | 演出のみ | 色（波長）が輝度と独立に襲撃判断に効くという**行動**データは見つからなかった。受容体の分光感度は既知だが（[Zhu et al. 2025](https://doi.org/10.1007/s00359-025-01776-z)）、それは別の主張 |
+| **D**（迫る）| なめらかな拡大 | 輝度エッジの拡大で襲撃率 約60%。サイズ一定で視差だけ動かすと 15–35% に落ちる。[Nityananda et al. 2019](https://doi.org/10.1242/jeb.198614) |
 
-A stepped loom (0.85 s per step) is offered as an alternative, because the "at least 0.8 s per step"
-result could not be traced to a readable primary source. Which one works is something you can test on
-your own animal.
+段階的な迫り方（1段 0.85 秒）も選べる。「各段階 0.8 秒以上で最大反応」という報告に当たるためだが、
+**その報告は読める一次資料まで辿れなかった**ので既定にしていない。どちらが効くかは自分の個体で試せる。
 
-The full survey, including what could **not** be verified, is in [`docs/RESEARCH.md`](docs/RESEARCH.md).
+確認できなかったものも含めた調査の全文は [`docs/RESEARCH.md`](docs/RESEARCH.md)。
 
-## Recording
+## 記録
 
-**襲った** logs one row with everything that was set at that moment: species, size in mm, the 10 cm
-reference angle, commanded and observed speed, target and background colour, Michelson contrast, motion
-mode, loom style, and whether the screen was calibrated. Settings → RECORD → CSV を書き出す exports them.
+**襲った** を押すと、その瞬間の設定が1行残る。種・実寸(mm)・10cm 換算の視角・指示速度と実測速度・
+獲物と背景の色・Michelson コントラスト・動きのモード・迫り方・校正済みかどうか。
+設定 → RECORD → 「CSV を書き出す」で取り出せる。
 
-To start the count again, press the strike counter twice — the first press only arms it, and it disarms
-after four seconds. **Export before you clear.**
+数えなおすときは**襲撃カウンターを2回押す**。1回目は確認に変わるだけで、4秒で解除される。
+**消す前に CSV を書き出すこと。**
 
-## Caveats
+## 注意
 
-- **The mantis will lunge at the screen.** Use a protective glass and set the tablet down so it cannot fall.
-- An LCD is built for human trichromatic vision. It has no UV, and whether its refresh rate reads as
-  flicker to a mantis is unresolved — critical flicker fusion in related species straddles 60 Hz. If your
-  animal ignores a stimulus that should work, the display itself is a suspect.
-- **This is not food.** It is a toy and an observation instrument; nothing here feeds the animal.
+- **カマキリは画面に飛びかかる。** 保護ガラスを付け、落下しない置き方をすること
+- 液晶は人の三色覚に合わせて作られている。UV は無く、リフレッシュレートがカマキリにフリッカーとして
+  見えるかは未解決（近縁種の臨界融合周波数は 60Hz をまたぐ）。効くはずの刺激を無視されたら、
+  ディスプレイ自体を疑う余地がある
+- **餌ではない。** 遊びと観察の道具であって、これで栄養は摂れない
 
-## Development
+## 開発
 
-Everything is in `index.html` — markup, styles, logic, and the prey artwork as path data. Open it, or
-serve the directory (`python3 -m http.server`) and point a tablet at it over the LAN.
+すべて `index.html` に入っている（マークアップ・スタイル・ロジック・獲物のパスデータ）。
+そのまま開くか、ディレクトリを配信（`python3 -m http.server`）して LAN 経由でタブレットから開く。
 
-## License
+## ライセンス
 
 MIT
