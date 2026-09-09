@@ -9,7 +9,7 @@ No build step, no dependencies — just open `index.html`.
 
 **▶ Live demo: https://gyroid-eth.github.io/mantis-lure/**
 
-![The app in use — a housefly on a plain bright field](screenshots/hero.png)
+![The app in use — a fly on a plain bright field](screenshots/hero.png)
 
 ## The design problem
 
@@ -30,10 +30,12 @@ Every instrument, button and number lives outside it, in the metal frame — and
 
 | Species | How it moves |
 |---|---|
-| Housefly (イエバエ) | Never quite still. Wings beat even while it hovers |
-| Grasshopper (オンブバッタ, *Atractomorpha*) | Big hops, long waits |
-| Cricket (エンマコオロギ) | Short quick hops, straight on to the next |
-| Jumping spider (ハエトリグモ) | Scuttles, then freezes dead still |
+| Fly | Never quite still. Wings beat even while it hovers |
+| Grasshopper | Big hops, long waits |
+| Cricket | Short quick hops, straight on to the next |
+| Spider | Scuttles, then freezes dead still |
+
+No species is claimed: the shapes are drawn to read as the animal, not to survive identification.
 
 The artwork is SVG with **one path per body part** — abdomen, wings, legs, antennae — each with its own
 pivot. Parts are rotated at runtime, so the wingbeat and the leg cadence follow the speed. Movement, not

@@ -317,7 +317,7 @@ const A = { buzz:0, held:false, buzzUntil:0, breakout:0, flee:0, hold:false, loo
 const dir = { x:0, y:0 };
 const prey = { x:0, y:0, vx:0, vy:0, ang:0, phase:0, rest:0, ax:0, ay:0 };
 const NAME = ['ハエ','バッタ','コオロギ','クモ'];
-const NAME_EN = ['housefly','onbu_grasshopper','emma_cricket','jumping_spider'];
+const NAME_EN = ['fly','grasshopper','cricket','spider'];
 
 const btnBuzz = document.querySelector('[data-a="buzz"]');
 const canvas = document.getElementById('field');
@@ -468,7 +468,7 @@ function stepPrey(dt){
     }
 
     // per-species signature
-    if (P.prey === 0){                       // housefly: never quite still
+    if (P.prey === 0){                       // fly: never quite still
       const j = (A.buzz ? 7 : 1.4) * vmax * dt;
       prey.vx += (Math.random()-.5) * j * 4; prey.vy += (Math.random()-.5) * j * 4;
     } else if (P.prey === 1 || P.prey === 2){ // grasshopper / cricket: hop, then wait
