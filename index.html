@@ -142,9 +142,9 @@ select.wide{-webkit-appearance:none;appearance:none}
   </div>
 
   <div class="prey" id="segMode">
-    <button data-m="manual" class="on">手動</button>
-    <button data-m="spiral">らせん</button>
-    <button data-m="wander">徘徊</button>
+    <button data-m="manual" class="on" title="獲物は自分では移動しない。十字キーとドラッグで動かした所に留まり、その場で暴れる">手動</button>
+    <button data-m="wander" title="獲物が自分で行き先を決めてうろつく。十字キーで押しやることもできる">徘徊</button>
+    <button data-m="spiral" title="画面の中心の周りを規則的に回る。文献で標準的に使われる誘発刺激">らせん</button>
   </div>
 
   <div class="prey" id="preySel">
@@ -201,6 +201,15 @@ select.wide{-webkit-appearance:none;appearance:none}
       <div class="hint">Prete et al. 2013 が用いた条件は 74–180°/s、O'Keeffe et al. 2022 のモデルは 82°/s。いずれも「実験条件」であって最適値の実測ではありません。80 はその中央付近の出発点です。</div>
     </div>
 
+    <h2>MOTION</h2>
+    <div class="fld">
+      <div class="hint">上段の3択は「<b style="color:var(--text)">誰が行き先を決めるか</b>」だけを切り替えます。
+        種ごとの動きの癖（ハエの微動、バッタの跳躍、クモの静止）は、どのモードでも常に働きます。<br><br>
+        <b style="color:var(--text)">手動</b>— 獲物は自分では移動しません。動かした所に留まり、その場で暴れます。<br>
+        <b style="color:var(--text)">徘徊</b>— 獲物が自分でうろつきます。十字キーで押しやることもできます。<br>
+        <b style="color:var(--text)">らせん</b>— 中心の周りを規則的に回ります。文献で標準的に使われる誘発刺激で、手が離せないときの自動運転にも使えます。</div>
+    </div>
+
     <h2>COLOUR</h2>
     <div class="fld">
       <label>獲物の色<b id="vTgt" style="font-size:11px">#000000</b></label>
@@ -251,7 +260,7 @@ const save = () => localStorage.setItem(LS, JSON.stringify(P));
 
 const A = { buzz:0, held:false, flee:0, hold:false, loom:0 };   // action levels
 const dir = { x:0, y:0 };
-const prey = { x:0, y:0, vx:0, vy:0, ang:0, phase:0, rest:0 };
+const prey = { x:0, y:0, vx:0, vy:0, ang:0, phase:0, rest:0, ax:0, ay:0 };
 const NAME = ['ハエ','バッタ','コオロギ','クモ'];
 const NAME_EN = ['housefly','onbu_grasshopper','emma_cricket','jumping_spider'];
 
@@ -266,7 +275,7 @@ function resize(){
   canvas.height = Math.round(r.height * DPR);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   W = r.width; H = r.height;
-  if (!prey.x) { prey.x = W / 2; prey.y = H / 2; }
+  if (!prey.x) { prey.x = prey.ax = W / 2; prey.y = prey.ay = H / 2; }
 }
 addEventListener('resize', resize);
 addEventListener('orientationchange', () => setTimeout(resize, 200));
@@ -364,23 +373,41 @@ function stepPrey(dt){
 
   if (A.hold){ prey.vx *= 0.82; prey.vy *= 0.82; }
   else {
-    if (P.mode === 'spiral'){
-      const r = Math.min(W, H) * (.16 + .12 * Math.sin(t * .35));
-      const w = vmax / Math.max(r, 1);
-      prey.phase += w * dt;
-      const tx = W/2 + Math.cos(prey.phase) * r, ty = H/2 + Math.sin(prey.phase) * r * .72;
-      prey.vx = (tx - prey.x) / Math.max(dt, .001); prey.vy = (ty - prey.y) / Math.max(dt, .001);
-    } else if (P.mode === 'wander'){
-      prey.phase += dt * (1.1 + (P.prey === 0 ? 1.4 : 0));
-      prey.vx += Math.cos(prey.phase * 1.7) * acc * dt * .55;
-      prey.vy += Math.sin(prey.phase * 2.3) * acc * dt * .55;
+    /* Two separate questions were tangled together here: who decides where the prey
+       travels, and how it moves once it is there. The species signature below is the
+       second one and always runs. The mode is only the first one. */
+    if (P.mode === 'manual'){
+      // 手動 — the prey does not travel on its own. It keeps an anchor, which only
+      // you move; the signature then plays out around that spot.
+      if (drag){ prey.ax = drag.x; prey.ay = drag.y; }
+      const step = vmax * dt * (A.flee > 0 ? 2.6 : 1);
+      prey.ax += dir.x * step; prey.ay += dir.y * step;
+      const m0 = sizePx() * .5 + 4;
+      prey.ax = Math.max(m0, Math.min(W - m0, prey.ax));
+      prey.ay = Math.max(m0, Math.min(H - m0, prey.ay));
+      prey.vx += (prey.ax - prey.x) * 13 * dt;
+      prey.vy += (prey.ay - prey.y) * 13 * dt;
+    } else {
+      // らせん / 徘徊 — the prey decides, and you can shove it around
+      if (P.mode === 'spiral'){
+        const r = Math.min(W, H) * (.16 + .12 * Math.sin(t * .35));
+        const w = vmax / Math.max(r, 1);
+        prey.phase += w * dt;
+        const tx = W/2 + Math.cos(prey.phase) * r, ty = H/2 + Math.sin(prey.phase) * r * .72;
+        prey.vx = (tx - prey.x) / Math.max(dt, .001); prey.vy = (ty - prey.y) / Math.max(dt, .001);
+      } else {
+        prey.phase += dt * (1.1 + (P.prey === 0 ? 1.4 : 0));
+        prey.vx += Math.cos(prey.phase * 1.7) * acc * dt * .55;
+        prey.vy += Math.sin(prey.phase * 2.3) * acc * dt * .55;
+      }
+      if (drag){
+        prey.vx += (drag.x - prey.x) * 7 * dt * (A.flee > 0 ? 3 : 1);
+        prey.vy += (drag.y - prey.y) * 7 * dt * (A.flee > 0 ? 3 : 1);
+      }
+      prey.vx += dir.x * acc * dt * (A.flee > 0 ? 2.6 : 1);
+      prey.vy += dir.y * acc * dt * (A.flee > 0 ? 2.6 : 1);
+      prey.ax = prey.x; prey.ay = prey.y;      // so switching back to 手動 keeps it here
     }
-    if (drag){
-      prey.vx += (drag.x - prey.x) * 7 * dt * (A.flee > 0 ? 3 : 1);
-      prey.vy += (drag.y - prey.y) * 7 * dt * (A.flee > 0 ? 3 : 1);
-    }
-    prey.vx += dir.x * acc * dt * (A.flee > 0 ? 2.6 : 1);
-    prey.vy += dir.y * acc * dt * (A.flee > 0 ? 2.6 : 1);
 
     // per-species signature
     if (P.prey === 0){                       // housefly: never quite still
@@ -432,6 +459,8 @@ function bolt(){                      // B — break away, with or without a ste
   else                     a = Math.random() * 6.283;         // from a standstill, pick a way out
   prey.vx += Math.cos(a) * vmax * 2.1;
   prey.vy += Math.sin(a) * vmax * 2.1;
+  const away = sizePx() * 2.2 + vmax * .35;   // 手動 では居場所ごと動かす
+  prey.ax += Math.cos(a) * away; prey.ay += Math.sin(a) * away;
   prey.rest = 0;                                              // interrupt a hopper's pause
   A.hold = false;
   document.querySelectorAll('[data-a="hold"]').forEach(q => q.classList.remove('on'));
