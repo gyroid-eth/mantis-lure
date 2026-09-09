@@ -59,6 +59,15 @@ green band marks where the reported values cluster (45–120 °/s, converted at 
 grasshopper's hop, the spider's freeze — runs in every mode. In 手動 the prey keeps an anchor that only
 you move, so it stays where you put it and misbehaves on the spot.
 
+## On a phone
+
+A narrow screen cannot hold the console along the top, but the rule that a hand must never cross the
+stimulus still stands. So the **stick and the A/B/C/D buttons pin themselves to the bottom edge** — out of
+the field, and where your thumbs already are — while the top strip keeps only the selectors and the
+instruments. The language switch sits at the top right (**EN / 日本語**) and is remembered on the device.
+
+<img src="screenshots/phone.png" width="380" alt="The narrow-screen layout">
+
 ## Calibration, and why there is no viewing-distance setting
 
 ![Calibration with the on-screen ruler](screenshots/calibration.png)

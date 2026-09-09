@@ -68,7 +68,7 @@ body{background:var(--slate);color:var(--text);font-family:var(--sans);
 .acts b{font-family:var(--mech);font-weight:500;font-size:15px;line-height:1}
 .acts span{font-size:9.5px;line-height:1;opacity:.8}
 .tool{flex:0 0 auto;display:flex;flex-direction:column;gap:4px}
-.tool button{width:48px;height:24px;border:1px solid var(--line);background:#1b1f1e;color:var(--metal);
+.tool button{width:48px;height:22px;border:1px solid var(--line);background:#1b1f1e;color:var(--metal);
   border-radius:3px;font-family:var(--mech);font-weight:300;font-size:10px;letter-spacing:.08em;cursor:pointer}
 .tool button.on{background:var(--metal);color:#1b1f1e}
 
@@ -130,22 +130,52 @@ select.wide{-webkit-appearance:none;appearance:none}
 .close{position:absolute;top:10px;right:12px;border:0;background:transparent;color:var(--metaldim);font-size:22px;cursor:pointer;line-height:1;padding:4px 8px}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
+/* ── phone ───────────────────────────────────────────────
+   The console cannot hold everything at 390 px, but the rule that a hand must never
+   cross the stimulus still stands. So the stick and the action buttons are pinned to
+   the bottom edge — out of the field, and where the thumbs already are — and the top
+   strip keeps only the selectors and the instruments. */
+@media (max-width:900px){
+  .console{flex-wrap:wrap;gap:8px;padding:6px 8px;padding-top:calc(6px + env(safe-area-inset-top,0px))}
+  .prey button{padding:7px 9px;font-size:11.5px}
+  .reads{gap:14px;flex:1 1 auto;min-width:170px}
+  .rd i,.meter i{font-size:8.5px}
+  .rd b{font-size:16px}
+  .meter{width:110px}
+  .tool{flex-direction:row;gap:5px;margin-left:auto}
+  .tool button{width:46px;height:24px}
+  .stick{position:fixed;z-index:4;left:14px;width:88px;height:88px;
+    bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  .acts{position:fixed;z-index:4;right:14px;display:grid;gap:6px;
+    grid-template-columns:repeat(2,54px);grid-template-rows:repeat(2,41px);
+    bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  .acts button{width:54px;height:41px;border-radius:9px}
+  .acts b{font-size:13px}
+  .acts span{font-size:8.5px}
+  .log{background:none;padding:0 14px;gap:10px;
+    bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+  .log button{padding:9px 15px;font-size:12.5px}
+  .log .count{padding:9px 12px}
+  .calwarn{font-size:11px;padding:5px 10px;max-width:92%}
+  .drawer{width:100%}
+}
+
 </style>
 </head>
 <body>
 
 <div class="console">
   <div class="prey" id="segMode">
-    <button data-m="manual" class="on" title="獲物は自分では移動しない。十字キーとドラッグで動かした所に留まり、その場で暴れる">手動</button>
-    <button data-m="wander" title="獲物が自分で行き先を決めてうろつく。十字キーで押しやることもできる">徘徊</button>
-    <button data-m="spiral" title="画面の中心の周りを規則的に回る。文献で標準的に使われる誘発刺激">らせん</button>
+    <button data-m="manual" class="on" data-t="mManual" data-tt="mManualT">手動</button>
+    <button data-m="wander" data-t="mWander" data-tt="mWanderT">徘徊</button>
+    <button data-m="spiral" data-t="mSpiral" data-tt="mSpiralT">らせん</button>
   </div>
 
   <div class="prey" id="preySel">
-    <button data-p="0" class="on">ハエ</button>
-    <button data-p="1">バッタ</button>
-    <button data-p="2">コオロギ</button>
-    <button data-p="3">クモ</button>
+    <button data-p="0" class="on" data-t="p0">ハエ</button>
+    <button data-p="1" data-t="p1">バッタ</button>
+    <button data-p="2" data-t="p2">コオロギ</button>
+    <button data-p="3" data-t="p3">クモ</button>
   </div>
 
   <div class="reads">
@@ -157,27 +187,28 @@ select.wide{-webkit-appearance:none;appearance:none}
     </div>
   </div>
 
-  <div class="stick" id="stick" aria-label="獲物を動かす"><div class="knob" id="knob"></div></div>
+  <div class="stick" id="stick" aria-label="move the prey"><div class="knob" id="knob"></div></div>
 
   <div class="acts" id="acts">
-    <button data-a="buzz"><b>A</b><span>ブルブル</span></button>
-    <button data-a="flee"><b>B</b><span>逃げる</span></button>
-    <button data-a="hold"><b>C</b><span>静止</span></button>
-    <button data-a="loom"><b>D</b><span>迫る</span></button>
+    <button data-a="buzz"><b>A</b><span data-t="aBuzz">ブルブル</span></button>
+    <button data-a="flee"><b>B</b><span data-t="aFlee">逃げる</span></button>
+    <button data-a="hold"><b>C</b><span data-t="aHold">静止</span></button>
+    <button data-a="loom"><b>D</b><span data-t="aLoom">迫る</span></button>
   </div>
 
   <div class="tool">
-    <button id="btnDrawer">設定</button>
-    <button id="btnFull">拡大</button>
+    <button id="btnDrawer" data-t="tSettings">設定</button>
+    <button id="btnFull" data-t="tFull">拡大</button>
+    <button id="btnLang">EN</button>
   </div>
 </div>
 
 <div class="stage" id="stage">
   <canvas id="field"></canvas>
-  <div class="calwarn" id="calWarn">未校正 — 画面の mm が実寸と一致していません。設定 → CALIBRATION で端末を選ぶか、画面の定規を実物に合わせてください</div>
+  <div class="calwarn" id="calWarn" data-t="calWarn">未校正 — 画面の mm が実寸と一致していません。設定 → CALIBRATION で端末を選ぶか、画面の定規を実物に合わせてください</div>
 
   <div class="log">
-    <button class="strike" id="btnStrike">襲った</button>
+    <button class="strike" id="btnStrike" data-t="bStrike">襲った</button>
     <button class="count" id="btnCount">襲撃 <b id="cStrike">0</b></button>
   </div>
 
@@ -186,26 +217,26 @@ select.wide{-webkit-appearance:none;appearance:none}
 
     <h2>STIMULUS</h2>
     <div class="fld">
-      <label>獲物の大きさ<b><span id="vSize">26</span><em>mm</em>　<span id="vSizeDeg" style="font-size:11px;color:var(--metaldim)">15° @10cm</span></b></label>
+      <label><span data-t="lSize">獲物の大きさ</span><b><span id="vSize">26</span><em>mm</em>　<span id="vSizeDeg" style="font-size:11px;color:var(--metaldim)">15° @10cm</span></b></label>
       <input type="range" id="sSize" min="3" max="120" step="1" value="26">
-      <div class="hint">画面に出る実寸を直接指定します。<b style="color:var(--text)">視距離は設定ではありません</b> — カマキリがどこにいるかは決められず、歩けば変わるからです。下の換算表を目安にしてください。Prete et al. 2013 では種差が大きい。Sphodromantis lineola は 10–20° で襲撃率が最大（逆U字）、Parasphendale affinis は 9° の円盤でピーク・襲撃閾値 6.9°、Popa spurca は 44° まで反応率が上昇し続ける。まず 15° から始めて、襲う角度を自分の個体で探すのが確実です。</div>
+      <div class="hint" data-th="h1">画面に出る実寸を直接指定します。<b style="color:var(--text)">視距離は設定ではありません</b> — カマキリがどこにいるかは決められず、歩けば変わるからです。下の換算表を目安にしてください。Prete et al. 2013 では種差が大きい。Sphodromantis lineola は 10–20° で襲撃率が最大（逆U字）、Parasphendale affinis は 9° の円盤でピーク・襲撃閾値 6.9°、Popa spurca は 44° まで反応率が上昇し続ける。まず 15° から始めて、襲う角度を自分の個体で探すのが確実です。</div>
     </div>
     <div class="fld">
-      <label>最高速度<b><span id="vSpeed">140</span><em>mm/s</em></b></label>
+      <label><span data-t="lSpeed">最高速度</span><b><span id="vSpeed">140</span><em>mm/s</em></b></label>
       <input type="range" id="sSpeed" min="10" max="600" step="5" value="140">
-      <div class="hint">画面上を実際に動く速さです。報告値は角速度なので距離に依存します — Prete et al. 2013 の条件 74–180°/s、O'Keeffe et al. 2022 のモデル 82°/s は、視距離 10cm ならおよそ 129–314 mm/s と 143 mm/s に当たります。メーターの緑帯は 45–120°/s を 10cm 換算した範囲です。</div>
+      <div class="hint" data-th="h2">画面上を実際に動く速さです。報告値は角速度なので距離に依存します — Prete et al. 2013 の条件 74–180°/s、O'Keeffe et al. 2022 のモデル 82°/s は、視距離 10cm ならおよそ 129–314 mm/s と 143 mm/s に当たります。メーターの緑帯は 45–120°/s を 10cm 換算した範囲です。</div>
     </div>
 
     <div class="fld">
-      <label>視距離ごとの視角</label>
+      <label><span data-t="lTable">視距離ごとの視角</span></label>
       <div class="hint" id="degTable" style="font-family:var(--mech);font-size:12px;letter-spacing:.04em;color:var(--amber);line-height:2"></div>
-      <div class="hint">襲われた距離を測れたときは、その距離の欄を読めば視角が分かります。CSV には実寸(mm)と、
+      <div class="hint" data-th="h3">襲われた距離を測れたときは、その距離の欄を読めば視角が分かります。CSV には実寸(mm)と、
         10cm 換算の視角を記録しています。</div>
     </div>
 
     <h2>MOTION</h2>
     <div class="fld">
-      <div class="hint">上段の3択は「<b style="color:var(--text)">誰が行き先を決めるか</b>」だけを切り替えます。
+      <div class="hint" data-th="h4">上段の3択は「<b style="color:var(--text)">誰が行き先を決めるか</b>」だけを切り替えます。
         種ごとの動きの癖（ハエの微動、バッタの跳躍、クモの静止）は、どのモードでも常に働きます。<br><br>
         <b style="color:var(--text)">手動</b>— 獲物は自分では移動しません。動かした所に留まり、その場で暴れます。<br>
         <b style="color:var(--text)">徘徊</b>— 獲物が自分でうろつきます。十字キーで押しやることもできます。<br>
@@ -213,12 +244,12 @@ select.wide{-webkit-appearance:none;appearance:none}
     </div>
 
     <div class="fld">
-      <label>迫り方（D ボタン）</label>
+      <label><span data-t="lLoom">迫り方（D ボタン）</span></label>
       <div class="seg" id="segLoom">
-        <button data-s="0" class="on">なめらか</button>
-        <button data-s="1">段階 0.8秒</button>
+        <button data-s="0" class="on" data-t="loomSmooth">なめらか</button>
+        <button data-s="1" data-t="loomStep">段階 0.8秒</button>
       </div>
-      <div class="hint">なめらかは輝度エッジが連続的に広がる古典的な looming。原典を確認できているのはこちらで、
+      <div class="hint" data-th="h5">なめらかは輝度エッジが連続的に広がる古典的な looming。原典を確認できているのはこちらで、
         襲撃率 約60%（サイズ一定で視差だけ動かすと 15–35% に落ちる）。段階は「各段階 0.8 秒以上で最大反応」
         という報告に合わせたものですが、<b style="color:var(--text)">その報告は本文を確認できていません</b>。
         どちらが効くかは、あなたの個体で試すのが早いはずです。</div>
@@ -226,37 +257,37 @@ select.wide{-webkit-appearance:none;appearance:none}
 
     <h2>COLOUR</h2>
     <div class="fld">
-      <label>獲物の色<b id="vTgt" style="font-size:11px">#000000</b></label>
+      <label><span data-t="lTgt">獲物の色</span><b id="vTgt" style="font-size:11px">#000000</b></label>
       <div class="swatches" id="swTgt"></div>
     </div>
     <div class="fld">
-      <label>背景の色<b id="vBg" style="font-size:11px">#F2F1EC</b></label>
+      <label><span data-t="lBg">背景の色</span><b id="vBg" style="font-size:11px">#F2F1EC</b></label>
       <div class="swatches" id="swBg"></div>
-      <label style="margin-top:10px">いまのコントラスト<b id="vCon">1.00</b></label>
-      <div class="hint">色が輝度と独立に襲撃判断に効くという行動学的証拠は見つかっていません。主変数は明暗差です。検出閾値は Michelson 0.016 程度と非常に低い一方、暗い標的×明るい背景が逆より一貫して有利。ここは色ではなくコントラストを作る道具として使ってください。</div>
+      <label style="margin-top:10px"><span data-t="lCon">いまのコントラスト</span><b id="vCon">1.00</b></label>
+      <div class="hint" data-th="h6">色が輝度と独立に襲撃判断に効くという行動学的証拠は見つかっていません。主変数は明暗差です。検出閾値は Michelson 0.016 程度と非常に低い一方、暗い標的×明るい背景が逆より一貫して有利。ここは色ではなくコントラストを作る道具として使ってください。</div>
     </div>
 
     <h2>CALIBRATION</h2>
     <div class="fld">
       <div class="hint" id="calState">未校正 — 実寸の計算に定規合わせが必要です。</div>
       <select class="wide" id="selDevice" style="text-align:center"></select>
-      <label style="margin-top:14px">画面の目盛を実物に合わせる<b><span id="vPpm">5.20</span><em>px/mm</em></b></label>
+      <label style="margin-top:14px"><span data-t="lPpm">画面の目盛を実物に合わせる</span><b><span id="vPpm">5.20</span><em>px/mm</em></b></label>
       <input type="range" id="sPpm" min="2.2" max="13" step="0.02" value="5.2">
-      <div class="hint">この設定を開いているあいだ、<b style="color:var(--text)">画面の下端に定規が出ます</b>。
+      <div class="hint" data-th="h7">この設定を開いているあいだ、<b style="color:var(--text)">画面の下端に定規が出ます</b>。
         実物の定規を当てて、目盛が合うまで上のつまみを動かしてください。合えば校正完了です。
         端末を選ぶだけでも実用になりますが、ケースや表示倍率で変わるので、記録を残すなら実測を推奨します。</div>
       <div class="seg" id="segRuler" style="margin-top:10px">
-        <button data-r="0" class="on">設定中だけ出す</button>
-        <button data-r="1">常に出す</button>
+        <button data-r="0" class="on" data-t="rulerDrawer">設定中だけ出す</button>
+        <button data-r="1" data-t="rulerAlways">常に出す</button>
       </div>
     </div>
 
     <h2>RECORD</h2>
     <div class="fld">
       <div class="hint" id="logState">記録 0 件</div>
-      <div class="hint">下の襲撃カウンターを2回押しても消せます。消す前に CSV を書き出してください。</div>
-      <button class="wide" id="btnCsv">CSV を書き出す</button>
-      <button class="wide" id="btnClear">記録を消す</button>
+      <div class="hint" data-th="h8">下の襲撃カウンターを2回押しても消せます。消す前に CSV を書き出してください。</div>
+      <button class="wide" id="btnCsv" data-t="bCsv">CSV を書き出す</button>
+      <button class="wide" id="btnClear" data-t="bClear">記録を消す</button>
     </div>
   </aside>
 
@@ -272,7 +303,7 @@ const LS = 'mantis-lure/v1';
    reported as a conditional reference at a stated distance. */
 const REF_MM = 100;                    // the distance the reference angles assume: 10 cm
 const P = Object.assign({
-  prey: 0, sizeMm: 26, speedMms: 140, rulerAlways: false,
+  prey: 0, sizeMm: 26, speedMms: 140, rulerAlways: false, lang: 'ja',
   tgt: '#000000', bg: '#F2F1EC', mode: 'manual', loomStep: false, pxPerMm: 0, log: []
 }, JSON.parse(localStorage.getItem(LS) || '{}'));
 if (P.sizeDeg && !P.sizeMm)            // migrate saved settings from the degrees-first version
@@ -309,7 +340,7 @@ addEventListener('orientationchange', () => setTimeout(resize, 200));
 // a plain desktop display is 96 CSS ppi = 3.78. Every angle on screen depends on
 // this number, so the UI marks readouts as estimates until it is pinned down.
 const DEVICES = [
-  ['未校正（推定）',            0],
+  ['', 0],
   ['iPad / iPad Air / iPad Pro', 5.20],
   ['iPad mini',                  6.42],
   ['iPhone (DPR 2)',             6.42],
@@ -528,7 +559,8 @@ function frame(now){
 }
 
 function drawRuler(g){
-  const mm = ppm(), y = H - 78, x0 = 44;   // clear of the strike button and its gradient
+  const phone = W < 900;
+  const mm = ppm(), y = H - (phone ? 132 : 78), x0 = phone ? 18 : 44;
   const span = Math.min(150, Math.floor((W - x0 * 2) / mm));
   if (span < 20) return;
   g.save(); g.globalAlpha = .5; g.strokeStyle = P.tgt; g.fillStyle = P.tgt;
@@ -540,8 +572,75 @@ function drawRuler(g){
     if (i % 10 === 0 && i) g.fillText(i, x, y + 13);
   }
   g.textAlign = 'left';
-  g.fillText('実物の定規を当てて、目盛が合うまで「画面の目盛を実物に合わせる」を動かす', x0, y - 26);
+  g.fillText(T('ruler'), x0, y - 26);
   g.restore();
+}
+
+
+/* ══ language ═══════════════════════════════════════════
+   Japanese lives in the markup and is captured at boot, so it is never written twice.
+   Only the English overrides are listed here. */
+const JA = {
+  mManualT:'獲物は自分では移動しない。動かした所に留まり、その場で暴れる',
+  mWanderT:'獲物が自分で行き先を決めてうろつく。スティックで押しやることもできる',
+  mSpiralT:'画面の中心の周りを規則的に回る。文献で標準的に使われる誘発刺激',
+  countLabel:'襲撃 ', countArm:'もう一度押すと消える ', clearArm:'もう一度押すと消える',
+  logState:n=>'記録 ' + n + ' 件',
+  calDone:v=>'校正済み — 1 mm = ' + v + ' CSS px',
+  calNone:v=>'未校正 — 1 mm = ' + v + ' CSS px と仮定中（推定）。',
+  ruler:'実物の定規を当てて、目盛が合うまで「画面の目盛を実物に合わせる」を動かす',
+  devNone:'未校正（推定）', devPC:'一般的な PC モニタ 96dpi', devMac:'MacBook Pro Retina',
+  clearConfirmHint:'消す前に CSV を書き出してください。'
+};
+const EN = {
+  mManual:'Manual', mWander:'Wander', mSpiral:'Spiral',
+  mManualT:'The prey does not travel on its own. It stays where you put it and misbehaves on the spot',
+  mWanderT:'The prey picks its own way. You can still shove it with the stick',
+  mSpiralT:'A fixed spiral around the centre — the eliciting stimulus used as standard in the literature',
+  p0:'Fly', p1:'Grasshopper', p2:'Cricket', p3:'Spider',
+  aBuzz:'buzz', aFlee:'flee', aHold:'hold', aLoom:'loom',
+  tSettings:'Settings', tFull:'Full',
+  bStrike:'It struck', bCsv:'Export CSV', bClear:'Clear the log',
+  countLabel:'Strikes ', countArm:'Press again to clear ', clearArm:'Press again to clear',
+  logState:n=>n + ' record' + (n === 1 ? '' : 's'),
+  calDone:v=>'Calibrated — 1 mm = ' + v + ' CSS px',
+  calNone:v=>'Not calibrated — assuming 1 mm = ' + v + ' CSS px.',
+  ruler:'Lay a real ruler against this and move the slider until the graduations line up',
+  devNone:'Not calibrated (assumed)', devPC:'Ordinary 96 dpi monitor', devMac:'MacBook Pro Retina',
+  calWarn:'Not calibrated — millimetres on screen are not real millimetres yet. Pick your device under CALIBRATION, or match the on-screen ruler',
+  lSize:'Prey size', lSpeed:'Top speed', lTable:'Angle by viewing distance',
+  lLoom:'How it looms (D)', lTgt:'Prey colour', lBg:'Background', lCon:'Contrast now',
+  lPpm:'Match the screen to a real ruler',
+  loomSmooth:'Smooth', loomStep:'Stepped 0.8 s',
+  rulerDrawer:'Only while open', rulerAlways:'Always show',
+  h1:'Sets the real length that appears on the glass. <b style="color:var(--text)">Viewing distance is not a setting</b> — where the mantis sits is not yours to decide, and it changes as the animal walks. Use the conversion table below. Prete et al. 2013 found large differences between species: <i>Sphodromantis lineola</i> strikes most at 10–20° (an inverted U), <i>Parasphendale affinis</i> peaks at a 9° disc with a 6.9° threshold, and <i>Popa spurca</i> keeps rising up to 44°. Start around 15° and find your own animal’s angle.',
+  h2:'How fast it actually travels across the glass. Reported figures are angular, so they depend on distance — the 74–180°/s used by Prete et al. 2013 and the 82°/s model input of O’Keeffe et al. 2022 come to roughly 129–314 mm/s and 143 mm/s at 10 cm. The green band on the meter is 45–120°/s converted at 10 cm.',
+  h3:'When you can measure the distance at which a strike happened, read that row. The CSV stores the real length in mm together with the angle at 10 cm.',
+  h4:'The three buttons above only choose <b style="color:var(--text)">who decides where it travels</b>. Each species’ own motion — the fly’s tremor, the grasshopper’s hop, the spider’s freeze — runs in every mode.<br><br><b style="color:var(--text)">Manual</b> — the prey does not travel by itself. It stays where you put it and misbehaves on the spot.<br><b style="color:var(--text)">Wander</b> — the prey picks its own way. You can still shove it with the stick.<br><b style="color:var(--text)">Spiral</b> — a fixed circuit around the centre. The standard eliciting stimulus, and a useful autopilot when your hands are busy.',
+  h5:'Smooth is the classic looming stimulus, an expanding luminance edge. It is the one with a primary source behind it: about 60% strikes, against 15–35% when size is held constant and only disparity moves. Stepped follows a report of maximal response at 0.8 s or more per step, but <b style="color:var(--text)">that report could not be traced to a readable source</b>. Which one works is best settled on your own animal.',
+  h6:'No behavioural evidence was found that colour matters independently of luminance. The main variable is the light–dark difference: the detection threshold is very low (Michelson ≈ 0.016), while a dark target on a bright field consistently beats the reverse. Treat this as a way to build contrast rather than to pick a colour.',
+  h7:'While these settings are open, <b style="color:var(--text)">a ruler appears along the bottom of the field</b>. Lay a real ruler against it and move the slider above until the graduations line up. Picking your device is usually good enough, but a case or display scaling can shift it, so measure if you intend to keep records.',
+  h8:'You can also clear it by pressing the strike counter twice. Export the CSV first.'
+};
+let JAcap = false;
+function captureJA(){
+  if (JAcap) return; JAcap = true;
+  document.querySelectorAll('[data-t]').forEach(e => JA[e.dataset.t] = e.textContent);
+  document.querySelectorAll('[data-th]').forEach(e => JA[e.dataset.th] = e.innerHTML);
+}
+function T(k, ...a){
+  const v = (P.lang === 'en' ? (EN[k] !== undefined ? EN[k] : JA[k]) : JA[k]);
+  return typeof v === 'function' ? v(...a) : (v === undefined ? '' : v);
+}
+function applyLang(){
+  captureJA();
+  document.querySelectorAll('[data-t]').forEach(e => e.textContent = T(e.dataset.t));
+  document.querySelectorAll('[data-tt]').forEach(e => e.title = T(e.dataset.tt));
+  document.querySelectorAll('[data-th]').forEach(e => e.innerHTML = T(e.dataset.th));
+  document.documentElement.lang = P.lang;
+  $('btnLang').textContent = P.lang === 'en' ? '日本語' : 'EN';
+  if (typeof selD !== 'undefined' && selD) selD.options[0].textContent = T('devNone');
+  refresh();
 }
 
 /* ══ readouts ═══════════════════════════════════════════ */
@@ -563,13 +662,12 @@ function refresh(){
   $('vTgt').textContent = P.tgt.toUpperCase(); $('vBg').textContent = P.bg.toUpperCase();
   const arming = armed && Date.now() < armed;
   $('cStrike').textContent = P.log.length;
-  $('btnCount').firstChild.nodeValue = arming ? 'もう一度押すと消える ' : '襲撃 ';
-  $('btnClear').textContent = arming ? 'もう一度押すと消える' : '記録を消す';
-  $('logState').textContent = '記録 ' + P.log.length + ' 件';
+  $('btnCount').firstChild.nodeValue = arming ? T('countArm') : T('countLabel');
+  $('btnClear').textContent = arming ? T('clearArm') : T('bClear');
+  $('logState').textContent = T('logState', P.log.length);
   $('vPpm').textContent = (P.pxPerMm || GUESS()).toFixed(2);
   $('calState').textContent = P.pxPerMm
-    ? '校正済み — 1 mm = ' + P.pxPerMm.toFixed(2) + ' CSS px'
-    : '未校正 — 1 mm = ' + GUESS().toFixed(2) + ' CSS px と仮定中（推定）。';
+    ? T('calDone', P.pxPerMm.toFixed(2)) : T('calNone', GUESS().toFixed(2));
   save();
 }
 
@@ -735,7 +833,8 @@ document.querySelectorAll('#segMode button').forEach(b => b.classList.toggle('on
 document.querySelectorAll('#segLoom button').forEach(b => b.classList.toggle('on', (b.dataset.s === '1') === P.loomStep));
 $('sSize').value = P.sizeMm; $('sPpm').value = P.pxPerMm || GUESS();
 document.querySelectorAll('#segRuler button').forEach(b => b.classList.toggle('on', (b.dataset.r === '1') === P.rulerAlways)); $('sSpeed').value = P.speedMms;
-resize(); refresh(); requestAnimationFrame(frame);
+$('btnLang').onclick = () => { P.lang = P.lang === 'ja' ? 'en' : 'ja'; applyLang(); save(); };
+resize(); applyLang(); refresh(); requestAnimationFrame(frame);
 </script>
 </body>
 </html>
