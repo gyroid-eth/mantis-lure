@@ -142,8 +142,9 @@ select.wide{-webkit-appearance:none;appearance:none}
 
   <div class="prey" id="preySel">
     <button data-p="0" class="on">ハエ<span>FLY</span></button>
-    <button data-p="1">コオロギ<span>CRICKET</span></button>
-    <button data-p="2">クモ<span>SPIDER</span></button>
+    <button data-p="1">バッタ<span>GRASSHOPPER</span></button>
+    <button data-p="2">コオロギ<span>CRICKET</span></button>
+    <button data-p="3">クモ<span>SPIDER</span></button>
   </div>
 
   <div class="reads">
@@ -258,8 +259,8 @@ const save = () => localStorage.setItem(LS, JSON.stringify(P));
 const A = { buzz:0, flee:0, hold:false, loom:0 };   // action levels
 const dir = { x:0, y:0 };
 const prey = { x:0, y:0, vx:0, vy:0, ang:0, phase:0, rest:0 };
-const NAME = ['ハエ','コオロギ','クモ'];
-const NAME_EN = ['fly','cricket','spider'];
+const NAME = ['ハエ','バッタ','コオロギ','クモ'];
+const NAME_EN = ['housefly','onbu_grasshopper','emma_cricket','jumping_spider'];
 
 const canvas = document.getElementById('field');
 const ctx = canvas.getContext('2d');
@@ -309,71 +310,54 @@ const contrast = () => {                   // Michelson
 };
 
 /* ══ prey silhouettes ═══════════════════════════════════ */
-function leg(g, x0, y0, a1, l1, a2, l2, w){
-  const kx = x0 + Math.cos(a1)*l1, ky = y0 + Math.sin(a1)*l1;
-  g.lineWidth = w; g.lineCap = 'round';
-  g.beginPath(); g.moveTo(x0, y0); g.lineTo(kx, ky);
-  g.lineTo(kx + Math.cos(a2)*l2, ky + Math.sin(a2)*l2); g.stroke();
+const ART = {"fly":[{"id":"leg_l1","d":"M 113.97 92.11 L 125.72 79.01 L 147.31 76.25 L 164.04 56.57 L 170.71 54.1 L 170.65 53.9 L 163.32 55.43 L 146.05 73.75 L 123.64 74.99 L 111.39 89.89 Z","p":[112.68,91.0]},{"id":"leg_l2","d":"M 107.35 88.3 L 111.75 65.76 L 100.85 42.82 L 102.29 24.89 L 98.75 18.96 L 98.61 19.04 L 101.06 25.11 L 98.5 43.18 L 107.6 66.24 L 104 87.7 Z","p":[105.68,88.0]},{"id":"leg_l3","d":"M 97.82 92.74 L 77.33 73.79 L 60.6 39.26 L 42.91 26.49 L 37.69 25.92 L 37.66 26.08 L 42.44 27.51 L 58.75 40.74 L 74.03 76.21 L 95.54 95.26 Z","p":[96.68,94.0]},{"id":"leg_r1","d":"M 113.97 107.89 L 125.72 120.99 L 147.31 123.75 L 164.04 143.43 L 170.71 145.9 L 170.65 146.1 L 163.32 144.57 L 146.05 126.25 L 123.64 125.01 L 111.39 110.11 Z","p":[112.68,109.0]},{"id":"leg_r2","d":"M 107.35 111.7 L 111.75 134.24 L 100.85 157.18 L 102.29 175.11 L 98.75 181.04 L 98.61 180.96 L 101.06 174.89 L 98.5 156.82 L 107.6 133.76 L 104 112.3 Z","p":[105.68,112.0]},{"id":"leg_r3","d":"M 97.82 107.26 L 77.33 126.21 L 60.6 160.74 L 42.91 173.51 L 37.69 174.08 L 37.66 173.92 L 42.44 172.49 L 58.75 159.26 L 74.03 123.79 L 95.54 104.74 Z","p":[96.68,106.0]},{"id":"antenna_l","d":"M 139.68 95 Q 144.68 89 149.68 90 Q 152.68 90 153.68 91 L 159.68 83 L 164.68 81 L 160.68 84 L 154.68 93 C 153.68 96 150.68 98 147.68 97 L 143.68 97 L 140.68 98 Z","p":[141.68,96.0]},{"id":"antenna_r","d":"M 139.68 105 Q 144.68 111 149.68 110 Q 152.68 110 153.68 109 L 159.68 117 L 164.68 119 L 160.68 116 L 154.68 107 C 153.68 104 150.68 102 147.68 103 L 143.68 103 L 140.68 102 Z","p":[141.68,104.0]},{"id":"body","d":"M 144.68 100 C 144.68 90 138.68 83 130.68 83 C 125.68 83 121.68 87 120.68 93 C 117.68 85 111.68 81 104.68 82 C 95.68 83 90.68 88 90.68 94 C 86.68 87 77.68 83 67.68 86 C 57.68 89 49.68 95 49.68 100 C 49.68 105 57.68 111 67.68 114 C 77.68 117 86.68 113 90.68 106 C 90.68 112 95.68 117 104.68 118 C 111.68 119 117.68 115 120.68 107 C 121.68 113 125.68 117 130.68 117 C 138.68 117 144.68 110 144.68 100 Z","p":[100.0,100.0]},{"id":"wing_l","d":"M 108.68 90 C 101.68 81 92.68 69 76.68 59 C 60.68 49 40.68 49 36.68 58 C 32.68 67 40.68 77 53.68 83 C 66.68 89 85.68 94 101.68 95 Q 107.68 95 108.68 90 Z","p":[105.68,92.0]},{"id":"wing_r","d":"M 108.68 110 C 101.68 119 92.68 131 76.68 141 C 60.68 151 40.68 151 36.68 142 C 32.68 133 40.68 123 53.68 117 C 66.68 111 85.68 106 101.68 105 Q 107.68 105 108.68 110 Z","p":[105.68,108.0]}],"grasshopper":[{"id":"leg_l1","d":"M 126.77 95.08 L 138.42 80.72 L 150.29 81.88 L 156.84 66.55 L 161.37 64.09 L 161.29 63.91 L 155.82 65.45 L 148.37 78.12 L 136.24 75.28 L 123.89 92.92 Z","p":[125.33,94.0]},{"id":"leg_l2","d":"M 117.11 92.25 L 120.9 69.98 L 110.59 62.63 L 117.76 49.63 L 122.35 48.1 L 122.31 47.9 L 116.9 48.37 L 106.07 63.37 L 115.76 72.02 L 113.55 91.75 Z","p":[115.33,92.0]},{"id":"leg_l3","d":"M 112.33 96 C 103.33 91 94.33 77 83.33 66 Q 76.33 60 73.33 62 L 47.33 80 L 42.33 78 L 43.33 82 L 34.33 88 L 30.33 86 L 30.33 90 L 19.33 96 L 14.33 95 L 10.33 98 L 18.33 99 L 33.33 93 L 35.33 96 L 37.33 90 L 47.33 86 L 49.33 89 L 51.33 83 L 74.33 69 C 82.33 80 94.33 95 103.33 102 Q 109.33 105 112.33 96 Z","p":[107.33,97.0]},{"id":"leg_r1","d":"M 126.77 104.92 L 138.42 119.28 L 150.29 118.12 L 156.84 133.45 L 161.37 135.91 L 161.29 136.09 L 155.82 134.55 L 148.37 121.88 L 136.24 124.72 L 123.89 107.08 Z","p":[125.33,106.0]},{"id":"leg_r2","d":"M 117.11 107.75 L 120.9 130.02 L 110.59 137.37 L 117.76 150.37 L 122.35 151.9 L 122.31 152.1 L 116.9 151.63 L 106.07 136.63 L 115.76 127.98 L 113.55 108.25 Z","p":[115.33,108.0]},{"id":"leg_r3","d":"M 112.33 104 C 103.33 109 94.33 123 83.33 134 Q 76.33 140 73.33 138 L 47.33 120 L 42.33 122 L 43.33 118 L 34.33 112 L 30.33 114 L 30.33 110 L 19.33 104 L 14.33 105 L 10.33 102 L 18.33 101 L 33.33 107 L 35.33 104 L 37.33 110 L 47.33 114 L 49.33 111 L 51.33 117 L 74.33 131 C 82.33 120 94.33 105 103.33 98 Q 109.33 95 112.33 104 Z","p":[107.33,103.0]},{"id":"antenna_l","d":"M 147.33 96 L 161.33 83 L 178.33 69 L 186.33 65 L 180.33 71 L 163.33 86 L 149.33 98 Z","p":[148.33,96.0]},{"id":"antenna_r","d":"M 147.33 104 L 161.33 117 L 178.33 131 L 186.33 135 L 180.33 129 L 163.33 114 L 149.33 102 Z","p":[148.33,104.0]},{"id":"body","d":"M 157.33 100 Q 149.33 95 139.33 92 Q 135.33 86 130.33 88 L 119.33 87 Q 116.33 85 112.33 86 L 100.33 89 C 86.33 87 67.33 90 52.33 94 L 37.33 99 Q 35.33 100 37.33 101 L 52.33 106 C 67.33 110 86.33 113 100.33 111 L 112.33 114 Q 116.33 115 119.33 113 L 130.33 112 Q 135.33 114 139.33 108 Q 149.33 105 157.33 100 Z","p":[100.0,100.0]},{"id":"wing_l","d":"M 117.33 91 Q 101.33 85 82.33 89 C 63.33 92 45.33 95 29.33 100 C 48.33 105 70.33 105 92.33 102 L 115.33 100 Q 119.33 96 117.33 91 Z","p":[113.33,93.0]},{"id":"wing_r","d":"M 117.33 109 Q 101.33 115 82.33 111 C 63.33 108 45.33 105 29.33 100 C 48.33 95 70.33 95 92.33 98 L 115.33 100 Q 119.33 104 117.33 109 Z","p":[113.33,107.0]}],"cricket":[{"id":"leg_l1","d":"M 121.32 92.77 L 136.25 82.81 L 151.49 78.85 L 158.77 59.75 L 169.06 54.09 L 168.97 53.91 L 157.26 58.25 L 148.54 75.15 L 133.78 77.19 L 118.71 89.23 Z","p":[120.02,91.0]},{"id":"leg_l2","d":"M 114.01 89.17 L 117.3 64.15 L 108.4 52.97 L 118.73 34.74 L 123.07 31.09 L 122.96 30.91 L 117.3 33.26 L 103.63 53.03 L 110.73 65.85 L 110.02 88.83 Z","p":[112.02,89.0]},{"id":"leg_l3","d":"M 107.02 94 C 101.02 83 91.02 57 79.02 43 Q 74.02 38 72.02 41 L 42.02 66 L 38.02 63 L 39.02 69 L 32.02 72 L 27.02 69 L 29.02 74 L 23.02 78 L 18.02 78 L 16.02 84 L 20.02 81 L 25.02 80 L 34.02 77 L 34.02 81 L 37.02 75 L 46.02 71 L 47.02 75 L 50.02 68 L 72.02 50 C 72.02 67 84.02 96 96.02 103 Q 103.02 106 107.02 94 Z","p":[102.02,96.0]},{"id":"leg_r1","d":"M 121.32 107.23 L 136.25 117.19 L 151.49 121.15 L 158.77 140.25 L 169.06 145.91 L 168.97 146.09 L 157.26 141.75 L 148.54 124.85 L 133.78 122.81 L 118.71 110.77 Z","p":[120.02,109.0]},{"id":"leg_r2","d":"M 114.01 110.83 L 117.3 135.85 L 108.4 147.03 L 118.73 165.26 L 123.07 168.91 L 122.96 169.09 L 117.3 166.74 L 103.63 146.97 L 110.73 134.15 L 110.02 111.17 Z","p":[112.02,111.0]},{"id":"leg_r3","d":"M 107.02 106 C 101.02 117 91.02 143 79.02 157 Q 74.02 162 72.02 159 L 42.02 134 L 38.02 137 L 39.02 131 L 32.02 128 L 27.02 131 L 29.02 126 L 23.02 122 L 18.02 122 L 16.02 116 L 20.02 119 L 25.02 120 L 34.02 123 L 34.02 119 L 37.02 125 L 46.02 129 L 47.02 125 L 50.02 132 L 72.02 150 C 72.02 133 84.02 104 96.02 97 Q 103.02 94 107.02 106 Z","p":[102.02,104.0]},{"id":"antenna_l","d":"M 144.02 90 C 161.02 77 182.02 50 190.02 22 L 191.02 13 L 190.02 14 C 184.02 39 161.02 73 142.02 87 Z","p":[144.02,89.0]},{"id":"antenna_r","d":"M 144.02 110 C 161.02 123 182.02 150 190.02 178 L 191.02 187 L 190.02 186 C 184.02 161 161.02 127 142.02 113 Z","p":[144.02,111.0]},{"id":"body","d":"M 152.02 100 C 152.02 90 146.02 83 138.02 82 C 131.02 81 126.02 85 124.02 90 L 121.02 86 Q 118.02 83 113.02 84 L 100.02 87 Q 97.02 90 97.02 93 C 90.02 90 84.02 85 75.02 87 C 63.02 88 54.02 91 51.02 95 C 40.02 91 29.02 88 19.02 87 L 20.02 88 L 48.02 99 L 47.02 100 L 48.02 101 L 20.02 112 L 19.02 113 C 29.02 112 40.02 109 51.02 105 C 54.02 109 63.02 112 75.02 113 C 84.02 115 90.02 110 97.02 107 Q 97.02 110 100.02 113 L 113.02 116 Q 118.02 117 121.02 114 L 124.02 110 C 126.02 115 131.02 119 138.02 118 C 146.02 117 152.02 110 152.02 100 Z","p":[100.0,100.0]},{"id":"wing_l","d":"M 120.02 90 C 110.02 86 92.02 84 78.02 88 C 68.02 89 57.02 94 51.02 99 C 64.02 102 86.02 103 106.02 102 L 118.02 100 Q 122.02 96 120.02 90 Z","p":[117.02,93.0]},{"id":"wing_r","d":"M 120.02 110 C 110.02 114 92.02 116 78.02 112 C 68.02 111 57.02 106 51.02 101 C 64.02 98 86.02 97 106.02 98 L 118.02 100 Q 122.02 104 120.02 110 Z","p":[117.02,107.0]}],"spider":[{"id":"leg_l1","d":"M 130.03 87.14 L 142.45 73.92 Q 144.12 72.14 146.24 70.94 L 155.28 65.86 Q 157.41 64.67 159.28 63.1 L 170.82 53.45 Q 171.54 52.85 172.26 52.24 L 176.03 49.11 Q 176.05 49.09 176.04 49.06 L 175.97 48.94 Q 175.95 48.91 175.92 48.93 L 171.34 50.8 Q 170.47 51.15 169.62 51.59 L 157.06 58.06 Q 154.6 59.33 151.92 60.06 L 140.56 63.14 Q 137.89 63.86 136.37 66.18 L 125.16 83.35 Q 124.63 84.16 125.39 84.75 L 128.61 87.25 Q 129.37 87.84 130.03 87.14 Z","p":[127.0,86.0]},{"id":"leg_l2","d":"M 121.96 82.65 L 125.84 66.59 Q 126.58 63.52 128.17 60.79 L 135.56 48.14 Q 136.55 46.45 137.93 45.08 L 144.67 38.4 Q 145.21 37.86 145.97 37.9 L 149.95 38.1 Q 149.98 38.1 149.99 38.07 L 150.01 37.93 Q 150.02 37.9 149.99 37.89 L 145.63 36.42 Q 144.79 36.14 144.05 36.63 L 135.27 42.36 Q 133.46 43.55 132.08 45.21 L 121.67 57.77 Q 119.42 60.48 118.92 63.96 L 116.38 81.59 Q 116.25 82.48 117.13 82.64 L 120.87 83.36 Q 121.75 83.52 121.96 82.65 Z","p":[119.0,83.0]},{"id":"leg_l3","d":"M 110.82 83.91 L 102.54 68.77 Q 101.2 66.33 99.87 63.89 L 93.88 52.9 Q 92.89 51.07 91.72 49.36 L 86.08 41.12 Q 85.57 40.36 84.68 40.13 L 80.07 38.92 Q 80.04 38.91 80.03 38.94 L 79.98 39.06 Q 79.96 39.09 79.99 39.11 L 83.72 41.23 Q 84.44 41.64 84.75 42.4 L 88.37 51.12 Q 89.11 52.93 89.74 54.78 L 93.89 66.99 Q 94.8 69.67 96.39 72.01 L 106.32 86.67 Q 106.78 87.36 107.49 86.92 L 110.51 85.08 Q 111.22 84.64 110.82 83.91 Z","p":[109.0,86.0]},{"id":"leg_l4","d":"M 102.88 90.36 L 89.45 79.17 Q 86.77 76.94 84.28 74.49 L 71.86 62.27 Q 69.63 60.07 66.86 58.62 L 53.05 51.4 Q 52.29 51 51.44 51.14 L 47.03 51.89 Q 47 51.9 47 51.93 L 47 52.07 Q 47 52.1 47.03 52.11 L 50.96 52.86 Q 51.71 53 52.33 53.46 L 64.03 62.18 Q 66.37 63.93 68.17 66.24 L 79.01 80.19 Q 81.24 83.06 84.31 84.99 L 99.77 94.67 Q 100.48 95.11 100.97 94.43 L 103.04 91.57 Q 103.52 90.89 102.88 90.36 Z","p":[102.0,93.0]},{"id":"leg_r1","d":"M 130.03 112.86 L 142.45 126.08 Q 144.12 127.86 146.24 129.06 L 155.28 134.14 Q 157.41 135.33 159.28 136.9 L 170.82 146.55 Q 171.54 147.15 172.26 147.76 L 176.03 150.89 Q 176.05 150.91 176.04 150.94 L 175.97 151.06 Q 175.95 151.09 175.92 151.07 L 171.34 149.2 Q 170.47 148.85 169.62 148.41 L 157.06 141.94 Q 154.6 140.67 151.92 139.94 L 140.56 136.86 Q 137.89 136.14 136.37 133.82 L 125.16 116.65 Q 124.63 115.84 125.39 115.25 L 128.61 112.75 Q 129.37 112.16 130.03 112.86 Z","p":[127.0,114.0]},{"id":"leg_r2","d":"M 121.96 117.35 L 125.84 133.41 Q 126.58 136.48 128.17 139.21 L 135.56 151.86 Q 136.55 153.55 137.93 154.92 L 144.67 161.6 Q 145.21 162.14 145.97 162.1 L 149.95 161.9 Q 149.98 161.9 149.99 161.93 L 150.01 162.07 Q 150.02 162.1 149.99 162.11 L 145.63 163.58 Q 144.79 163.86 144.05 163.37 L 135.27 157.64 Q 133.46 156.45 132.08 154.79 L 121.67 142.23 Q 119.42 139.52 118.92 136.04 L 116.38 118.41 Q 116.25 117.52 117.13 117.36 L 120.87 116.64 Q 121.75 116.48 121.96 117.35 Z","p":[119.0,117.0]},{"id":"leg_r3","d":"M 110.82 116.09 L 102.54 131.23 Q 101.2 133.67 99.87 136.11 L 93.88 147.1 Q 92.89 148.93 91.72 150.64 L 86.08 158.88 Q 85.57 159.64 84.68 159.87 L 80.07 161.08 Q 80.04 161.09 80.03 161.06 L 79.98 160.94 Q 79.96 160.91 79.99 160.89 L 83.72 158.77 Q 84.44 158.36 84.75 157.6 L 88.37 148.88 Q 89.11 147.07 89.74 145.22 L 93.89 133.01 Q 94.8 130.33 96.39 127.99 L 106.32 113.33 Q 106.78 112.64 107.49 113.08 L 110.51 114.92 Q 111.22 115.36 110.82 116.09 Z","p":[109.0,114.0]},{"id":"leg_r4","d":"M 102.88 109.64 L 89.45 120.83 Q 86.77 123.06 84.28 125.51 L 71.86 137.73 Q 69.63 139.93 66.86 141.38 L 53.05 148.6 Q 52.29 149 51.44 148.86 L 47.03 148.11 Q 47 148.1 47 148.07 L 47 147.93 Q 47 147.9 47.03 147.89 L 50.96 147.14 Q 51.71 147 52.33 146.54 L 64.03 137.82 Q 66.37 136.07 68.17 133.76 L 79.01 119.81 Q 81.24 116.94 84.31 115.01 L 99.77 105.33 Q 100.48 104.89 100.97 105.57 L 103.04 108.43 Q 103.52 109.11 102.88 109.64 Z","p":[102.0,107.0]},{"id":"body","d":"M 142 100 L 138 95 C 143 95 147 92 146 88 C 145 85 141 85 138 88 L 135 91 L 136 85 Q 134 78 126 76 C 115 73 104 78 98 85 Q 95 89 96 96 L 91 96 C 88 87 82 82 72 82 C 59 82 49 89 49 100 C 49 111 59 118 72 118 C 82 118 88 113 91 104 L 96 104 Q 95 111 98 115 C 104 122 115 127 126 124 Q 134 122 136 115 L 135 109 L 138 112 C 141 115 145 115 146 112 C 147 108 143 105 138 105 L 142 100 Z","p":[100.0,100.0]}]};
+
+/* Artwork is authored as SVG (viewBox 0 0 200 200, nose toward +x) with one path
+   per body part and a stated pivot, so wings, legs and antennae can be articulated
+   at runtime. Movement — not shape — is what releases the strike, so a rigid stamp
+   would throw away the part that matters. */
+const KEY = ['fly', 'grasshopper', 'cricket', 'spider'];
+const SPEC = [                      // per species: how the parts move
+  { wing:.30, wingHz:30, leg:.05, legHz:9,  hover:.55 },   // fly
+  { wing:.03, wingHz:3,  leg:.10, legHz:5,  hover:.05 },   // grasshopper
+  { wing:.04, wingHz:4,  leg:.12, legHz:7,  hover:.08 },   // cricket
+  { wing:0,   wingHz:0,  leg:.16, legHz:8,  hover:.05 }    // jumping spider
+];
+const ARTC = {};
+function artFor(key){
+  if (ARTC[key]) return ARTC[key];
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 200 200');
+  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+  document.body.appendChild(svg);
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  const parts = ART[key].map((q, i) => {
+    const el = document.createElementNS(NS, 'path');
+    el.setAttribute('d', q.d); svg.appendChild(el);
+    const b = el.getBBox();
+    x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
+    x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height);
+    return { id: q.id, path: new Path2D(q.d), pv: q.p, side: q.id.endsWith('_l') || /_l\d/.test(q.id) ? 1 : -1, ph: i * 1.9 };
+  });
+  svg.remove();
+  return ARTC[key] = { parts, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, ext: Math.max(x1 - x0, y1 - y0) };
 }
+let activity = 0;                    // 0 = still, 1 = moving at full tilt
 function drawPrey(g, x, y, ang, s, kind, t){
-  g.save(); g.translate(x, y); g.rotate(ang);
-  g.fillStyle = P.tgt; g.strokeStyle = P.tgt; g.lineJoin = 'round';
-  const u = s / 2;                                  // half extent, nose at +x
-  const flap = Math.sin(t * 34);
-
-  if (kind === 0){                                  // ── fly
-    g.save();                                       // wings, swept back, fluttering
-    g.globalAlpha = .42 + .2 * Math.abs(flap);
-    for (const sg of [-1, 1]){
-      g.save(); g.translate(.12*u, sg*.2*u); g.rotate(sg*(.42 + .14*flap));
-      g.beginPath(); g.ellipse(-.5*u, sg*.14*u, .62*u, .18*u, 0, 0, 7); g.fill();
-      g.restore();
-    }
-    g.restore();
-    for (const sg of [-1, 1]) for (let i = 0; i < 3; i++){   // six legs
-      const bx = (.28 - i*.24) * u;
-      leg(g, bx, sg*.16*u, sg*(1.15 + i*.22), .3*u, sg*(2.5 - i*.1), .26*u, Math.max(1, .05*u));
-    }
-    g.beginPath(); g.ellipse(-.36*u, 0, .48*u, .25*u, 0, 0, 7); g.fill();   // abdomen
-    g.beginPath(); g.ellipse( .16*u, 0, .34*u, .3*u, 0, 0, 7); g.fill();    // thorax
-    g.beginPath(); g.arc(.6*u, 0, .24*u, 0, 7); g.fill();                   // head
-    g.save(); g.globalCompositeOperation = 'destination-out';              // eye notch
-    g.beginPath(); g.arc(.67*u, -.12*u, .06*u, 0, 7); g.fill();
-    g.beginPath(); g.arc(.67*u,  .12*u, .06*u, 0, 7); g.fill(); g.restore();
-
-  } else if (kind === 1){                           // ── cricket
-    for (const sg of [-1, 1]){                      // hind femur (thick) + tibia
-      g.beginPath();                                // femur as a tapered blade
-      g.moveTo(-.02*u, sg*.1*u);
-      g.quadraticCurveTo(-.34*u, sg*.42*u, -.46*u, sg*.66*u);
-      g.quadraticCurveTo(-.58*u, sg*.5*u, -.4*u, sg*.14*u);
-      g.closePath(); g.fill();
-      g.lineWidth = Math.max(1, .05*u); g.lineCap = 'round';
-      g.beginPath(); g.moveTo(-.46*u, sg*.66*u);
-      g.quadraticCurveTo(-.12*u, sg*.94*u, .22*u, sg*.74*u); g.stroke();
-    }
-    for (const sg of [-1, 1]) for (let i = 0; i < 2; i++)   // walking legs
-      leg(g, (.34 - i*.26)*u, sg*.14*u, sg*(1.3 + i*.2), .26*u, sg*2.4, .22*u, Math.max(1, .045*u));
-    g.beginPath(); g.ellipse(-.14*u, 0, .72*u, .25*u, 0, 0, 7); g.fill();  // body
-    g.beginPath(); g.ellipse(.66*u, 0, .26*u, .23*u, 0, 0, 7); g.fill();   // head
-    g.lineWidth = Math.max(1, .04*u); g.lineCap = 'round';                 // antennae
-    for (const sg of [-1, 1]){
-      g.beginPath(); g.moveTo(.82*u, sg*.08*u);
-      g.quadraticCurveTo(1.25*u, sg*(.34 + .07*flap)*u, 1.72*u, sg*(.52 + .12*flap)*u); g.stroke();
-    }
-
-  } else {                                          // ── spider
-    for (const sg of [-1, 1]) for (let i = 0; i < 4; i++){
-      const a = sg * (0.42 + i * 0.62);             // 4 fore, 4 aft — symmetric fan
-      const sw = .07 * Math.sin(t * 11 + i * 1.6) * sg;
-      leg(g, .1*u, sg*.1*u, a + sw, .52*u, a + sg*.62 + sw, .5*u, Math.max(1.2, .06*u));
-    }
-    g.beginPath(); g.ellipse(-.42*u, 0, .46*u, .4*u, 0, 0, 7); g.fill();   // abdomen
-    g.beginPath(); g.ellipse(.12*u, 0, .3*u, .27*u, 0, 0, 7); g.fill();    // cephalothorax
-    for (const sg of [-1, 1]){                                             // pedipalps
-      g.lineWidth = Math.max(1, .05*u);
-      g.beginPath(); g.moveTo(.3*u, sg*.1*u); g.lineTo(.6*u, sg*.2*u); g.stroke();
-    }
+  const a = artFor(KEY[kind]), cfg = SPEC[kind], k = s / a.ext;
+  const wa = Math.max(cfg.hover, activity), la = activity;
+  g.save(); g.translate(x, y); g.rotate(ang); g.scale(k, k); g.translate(-a.cx, -a.cy);
+  g.fillStyle = P.tgt;
+  for (const pt of a.parts){
+    let rot = 0;
+    if (pt.id[0] === 'w')      rot = cfg.wing * wa * Math.sin(t * cfg.wingHz) * pt.side;
+    else if (pt.id[0] === 'l') rot = cfg.leg  * la * Math.sin(t * cfg.legHz + pt.ph) * pt.side;
+    else if (pt.id[0] === 'a') rot = .07 * Math.sin(t * 2.2 + pt.ph) * pt.side;
+    if (rot){
+      g.save(); g.translate(pt.pv[0], pt.pv[1]); g.rotate(rot); g.translate(-pt.pv[0], -pt.pv[1]);
+      g.fill(pt.path, 'evenodd'); g.restore();
+    } else g.fill(pt.path, 'evenodd');
   }
   g.restore();
 }
@@ -406,18 +390,19 @@ function stepPrey(dt){
     prey.vy += dir.y * acc * dt * (A.flee > 0 ? 2.6 : 1);
 
     // per-species signature
-    if (P.prey === 0){                       // fly: constant fine jitter
+    if (P.prey === 0){                       // housefly: never quite still
       const j = (A.buzz ? 7 : 1.4) * vmax * dt;
       prey.vx += (Math.random()-.5) * j * 4; prey.vy += (Math.random()-.5) * j * 4;
-    } else if (P.prey === 1){                // cricket: hop / rest
+    } else if (P.prey === 1 || P.prey === 2){ // grasshopper / cricket: hop, then wait
+      const big = P.prey === 1;
       prey.rest -= dt;
       if (prey.rest <= 0){
-        prey.rest = A.buzz ? .12 + Math.random()*.15 : .45 + Math.random()*.5;
-        const a = Math.random() * 6.283, imp = vmax * (A.buzz ? .9 : .65);
+        prey.rest = (A.buzz ? .12 : (big ? .8 : .45)) + Math.random() * (big ? .9 : .5);
+        const a = Math.random() * 6.283, imp = vmax * (big ? 1.05 : .65) * (A.buzz ? 1.4 : 1);
         prey.vx += Math.cos(a) * imp; prey.vy += Math.sin(a) * imp;
       }
       prey.vx *= .93; prey.vy *= .93;
-    } else {                                 // spider: scuttle then freeze
+    } else {                                 // jumping spider: scuttle, then freeze
       prey.rest -= dt;
       if (prey.rest <= 0){
         prey.rest = A.buzz ? .18 : .5 + Math.random() * .9;
@@ -455,6 +440,7 @@ function frame(now){
 
   const sp = stepPrey(dt);
   velSmooth += (sp - velSmooth) * Math.min(1, dt * 6);
+  activity = A.hold ? 0 : Math.min(1, sp / Math.max(dpsToPx(P.speedDps) * .35, 1));
 
   ctx.fillStyle = P.bg; ctx.fillRect(0, 0, W, H);
   // looming enlarges the target stepwise — the strongest documented releaser
