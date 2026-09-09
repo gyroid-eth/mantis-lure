@@ -95,6 +95,7 @@ body{background:var(--slate);color:var(--text);font-family:var(--sans);
 .fld{margin-bottom:15px}
 .fld label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--text);margin-bottom:6px}
 .fld label b{font-family:var(--mech);font-weight:500;font-size:15px;color:var(--amber);font-variant-numeric:tabular-nums}
+.fld label b.warn{color:#c9552f}
 .fld label b em{font-size:10px;font-style:normal;color:var(--amberdim);margin-left:2px}
 .fld .hint{font-size:11px;color:var(--metaldim);line-height:1.6;margin-top:5px}
 input[type=range]{width:100%;-webkit-appearance:none;background:transparent;margin:0;height:26px}
@@ -140,18 +141,22 @@ select.wide{-webkit-appearance:none;appearance:none}
     <button class="r" data-d="r" aria-label="右へ">▶</button>
   </div>
 
+  <div class="prey" id="segMode">
+    <button data-m="manual" class="on">手動</button>
+    <button data-m="spiral">らせん</button>
+    <button data-m="wander">徘徊</button>
+  </div>
+
   <div class="prey" id="preySel">
-    <button data-p="0" class="on">ハエ<span>FLY</span></button>
-    <button data-p="1">バッタ<span>GRASSHOPPER</span></button>
-    <button data-p="2">コオロギ<span>CRICKET</span></button>
-    <button data-p="3">クモ<span>SPIDER</span></button>
+    <button data-p="0" class="on">ハエ</button>
+    <button data-p="1">バッタ</button>
+    <button data-p="2">コオロギ</button>
+    <button data-p="3">クモ</button>
   </div>
 
   <div class="reads">
     <div class="rd"><i>SIZE</i><b id="rdSize">15<em>°</em></b></div>
     <div class="rd"><i>VELOCITY</i><b id="rdVel">0<em>°/s</em></b></div>
-    <div class="rd"><i>CONTRAST</i><b id="rdCon">0.93</b></div>
-    <div class="rd"><i>DISTANCE</i><b id="rdDist">10<em>cm</em></b></div>
   </div>
 
   <div class="acts" id="acts">
@@ -173,9 +178,7 @@ select.wide{-webkit-appearance:none;appearance:none}
 
   <div class="log">
     <button class="strike" id="btnStrike">襲った</button>
-    <button id="btnTrack">追った</button>
-    <button id="btnAuto">自動 らせん</button>
-    <div class="count">襲撃 <b id="cStrike">0</b>　追跡 <b id="cTrack">0</b></div>
+    <div class="count">襲撃 <b id="cStrike">0</b></div>
   </div>
 
   <aside class="drawer" id="drawer" aria-label="設定">
@@ -206,18 +209,8 @@ select.wide{-webkit-appearance:none;appearance:none}
     <div class="fld">
       <label>背景の色<b id="vBg" style="font-size:11px">#F2F1EC</b></label>
       <div class="swatches" id="swBg"></div>
+      <label style="margin-top:10px">いまのコントラスト<b id="vCon">1.00</b></label>
       <div class="hint">色が輝度と独立に襲撃判断に効くという行動学的証拠は見つかっていません。主変数は明暗差です。検出閾値は Michelson 0.016 程度と非常に低い一方、暗い標的×明るい背景が逆より一貫して有利。ここは色ではなくコントラストを作る道具として使ってください。</div>
-    </div>
-
-    <h2>MOTION</h2>
-    <div class="fld">
-      <label>動きの癖</label>
-      <div class="seg" id="segMode">
-        <button data-m="manual" class="on">手動</button>
-        <button data-m="spiral">らせん</button>
-        <button data-m="wander">徘徊</button>
-      </div>
-      <div class="hint">らせんは文献で標準的に使われる誘発刺激。手が離せないときの自動運転です。</div>
     </div>
 
     <h2>CALIBRATION</h2>
@@ -256,7 +249,7 @@ const P = Object.assign({
 }, JSON.parse(localStorage.getItem(LS) || '{}'));
 const save = () => localStorage.setItem(LS, JSON.stringify(P));
 
-const A = { buzz:0, flee:0, hold:false, loom:0 };   // action levels
+const A = { buzz:0, held:false, flee:0, hold:false, loom:0 };   // action levels
 const dir = { x:0, y:0 };
 const prey = { x:0, y:0, vx:0, vy:0, ang:0, phase:0, rest:0 };
 const NAME = ['ハエ','バッタ','コオロギ','クモ'];
@@ -429,11 +422,26 @@ function stepPrey(dt){
   return sp;
 }
 
+function bolt(){                      // B — break away, with or without a steering input
+  A.flee = 1;
+  const vmax = dpsToPx(P.speedDps);
+  const sp = Math.hypot(prey.vx, prey.vy);
+  let a;
+  if (dir.x || dir.y)      a = Math.atan2(dir.y, dir.x);      // steer if the pad is held
+  else if (sp > vmax * .1) a = Math.atan2(prey.vy, prey.vx);  // else carry on, faster
+  else                     a = Math.random() * 6.283;         // from a standstill, pick a way out
+  prey.vx += Math.cos(a) * vmax * 2.1;
+  prey.vy += Math.sin(a) * vmax * 2.1;
+  prey.rest = 0;                                              // interrupt a hopper's pause
+  A.hold = false;
+  document.querySelectorAll('[data-a="hold"]').forEach(q => q.classList.remove('on'));
+}
+
 /* ══ frame ══════════════════════════════════════════════ */
 let velSmooth = 0;
 function frame(now){
   const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
-  A.buzz = Math.max(0, A.buzz - dt * 4);
+  A.buzz = A.held ? 1 : Math.max(0, A.buzz - dt * 4);
   A.flee = Math.max(0, A.flee - dt * 1.2);
   if (A.loom > 0){ loomPhase = Math.min(1, loomPhase + dt * .9); A.loom -= dt * .5; }
   else loomPhase = Math.max(0, loomPhase - dt * 1.6);
@@ -458,14 +466,12 @@ function refresh(){
   $('rdSize').innerHTML = P.sizeDeg + '<em>°</em>' + (est ? '<em> 推定</em>' : '');
   $('rdSize').classList.toggle('est', est);
   $('calWarn').hidden = !est;
-  $('rdDist').innerHTML = P.distCm + '<em>cm</em>';
   const c = contrast();
-  const cn = $('rdCon'); cn.textContent = c.toFixed(2); cn.classList.toggle('warn', c < .5);
+  const cc = $('vCon'); cc.textContent = c.toFixed(2); cc.classList.toggle('warn', c < .5);
   $('vSize').textContent = P.sizeDeg; $('vSizeMm').textContent = sizeMm().toFixed(0) + 'mm';
   $('vDist').textContent = P.distCm; $('vSpeed').textContent = P.speedDps;
   $('vTgt').textContent = P.tgt.toUpperCase(); $('vBg').textContent = P.bg.toUpperCase();
-  $('cStrike').textContent = P.log.filter(l => l.event === 'strike').length;
-  $('cTrack').textContent = P.log.filter(l => l.event === 'track').length;
+  $('cStrike').textContent = P.log.length;
   $('logState').textContent = '記録 ' + P.log.length + ' 件';
   $('calState').textContent = P.pxPerMm
     ? '校正済み — 1 mm = ' + P.pxPerMm.toFixed(2) + ' CSS px'
@@ -487,9 +493,11 @@ document.querySelectorAll('#acts button').forEach(b => {
   b.addEventListener('pointerdown', e => {
     e.preventDefault();
     if (a === 'hold'){ A.hold = !A.hold; b.classList.toggle('on', A.hold); }
+    else if (a === 'buzz'){ A.buzz = 1; A.held = true; b.classList.add('on'); }
+    else if (a === 'flee'){ bolt(); b.classList.add('on'); }
     else { A[a] = 1; b.classList.add('on'); }
   });
-  const up = () => { if (a !== 'hold'){ if (a === 'buzz') A.buzz = 0; b.classList.remove('on'); } };
+  const up = () => { if (a !== 'hold'){ if (a === 'buzz') A.held = false; b.classList.remove('on'); } };
   ['pointerup','pointerleave','pointercancel'].forEach(k => b.addEventListener(k, up));
 });
 document.querySelectorAll('#preySel button').forEach(b => b.addEventListener('click', () => {
@@ -499,8 +507,8 @@ document.querySelectorAll('#preySel button').forEach(b => b.addEventListener('cl
 }));
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if (k === ' ' || k === 'a'){ A.buzz = 1; e.preventDefault(); }
-  if (k === 'b') A.flee = 1;
+  if (k === ' ' || k === 'a'){ A.buzz = 1; A.held = true; e.preventDefault(); }
+  if (k === 'b') bolt();
   if (k === 'c') A.hold = !A.hold;
   if (k === 'd') A.loom = 1;
   const m = { arrowup:'u', arrowdown:'d', arrowleft:'l', arrowright:'r' }[k];
@@ -508,7 +516,7 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => {
   const k = e.key.toLowerCase();
-  if (k === ' ' || k === 'a') A.buzz = 0;
+  if (k === ' ' || k === 'a') A.held = false;
   if (k.startsWith('arrow')){ dir.x = 0; dir.y = 0; }
 });
 
@@ -540,14 +548,8 @@ swatches($('swTgt'), TGT, 'tgt'); swatches($('swBg'), BGS, 'bg');
 
 document.querySelectorAll('#segMode button').forEach(b => b.onclick = () => {
   P.mode = b.dataset.m;
-  document.querySelectorAll('#segMode button').forEach(q => q.classList.toggle('on', q === b));
-  $('btnAuto').classList.toggle('on', P.mode !== 'manual'); refresh();
+  document.querySelectorAll('#segMode button').forEach(q => q.classList.toggle('on', q === b)); refresh();
 });
-$('btnAuto').onclick = () => {
-  P.mode = P.mode === 'spiral' ? 'manual' : 'spiral';
-  document.querySelectorAll('#segMode button').forEach(q => q.classList.toggle('on', q.dataset.m === P.mode));
-  $('btnAuto').classList.toggle('on', P.mode !== 'manual'); refresh();
-};
 
 /* ══ calibration ════════════════════════════════════════ */
 const selD = $('selDevice');
@@ -568,9 +570,9 @@ $('calDone').onclick = () => {
 };
 
 /* ══ record ═════════════════════════════════════════════ */
-function record(event){
+function record(){
   P.log.push({
-    ts: new Date().toISOString(), event,
+    ts: new Date().toISOString(),
     prey: NAME_EN[P.prey], size_deg: P.sizeDeg, size_mm: +sizeMm().toFixed(1),
     dist_cm: P.distCm, speed_deg_s: P.speedDps, obs_deg_s: Math.round(pxToDps(velSmooth)),
     target: P.tgt, background: P.bg, contrast: +contrast().toFixed(3),
@@ -578,8 +580,7 @@ function record(event){
   });
   refresh();
 }
-$('btnStrike').onclick = () => record('strike');
-$('btnTrack').onclick  = () => record('track');
+$('btnStrike').onclick = () => record();
 $('btnCsv').onclick = () => {
   if (!P.log.length) return;
   const cols = Object.keys(P.log[0]);
@@ -607,7 +608,6 @@ addEventListener('pointerdown', keepAwake, { once:true });
 document.querySelectorAll('#preySel button').forEach(b => b.classList.toggle('on', +b.dataset.p === P.prey));
 document.querySelectorAll('#segMode button').forEach(b => b.classList.toggle('on', b.dataset.m === P.mode));
 $('sSize').value = P.sizeDeg; $('sDist').value = P.distCm; $('sSpeed').value = P.speedDps;
-$('btnAuto').classList.toggle('on', P.mode !== 'manual');
 resize(); refresh(); requestAnimationFrame(frame);
 </script>
 </body>
